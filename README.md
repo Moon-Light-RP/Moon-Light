@@ -105,15 +105,15 @@ The site is automatically deployed to Vercel from GitHub repository:
 - **Repository:** https://github.com/Moon-Light-RP/Moon-Light
 - **Production URL:** https://moon-light-eosin.vercel.app
 - **Branch:** main
-- **Root Directory:** wepsite/moonlight-main
+- **Root Directory:** `.` (root directory)
 - **Build System:** Vercel automatic builds
 
 Any push to the `main` branch triggers an automatic deployment.
 
 ## Vercel Configuration
 
-**Important:** Vercel must be configured to use the correct root directory:
-- Root Directory: `wepsite/moonlight-main`
+**Important:** Vercel uses the default root directory configuration:
+- Root Directory: `.` (root directory)
 - Branch: `main`
 - Build Command: Default (Vercel auto-detects)
 - Output Directory: Default (root)
@@ -154,7 +154,11 @@ If you encounter 404 errors:
 
 ## Recent Changes
 
+- Restructured project to root directory for Vercel compatibility
 - Updated Node.js engine to 24.x for Vercel compatibility
+- Simplified Discord OAuth flow in login.html
+- Added debug logging for SESSION_SECRET verification
+- Updated color theme from blue to red across UI components
 - Improved session security with encrypted stateless cookies
 - Enhanced Discord OAuth integration
 - Added comprehensive role-based access control
