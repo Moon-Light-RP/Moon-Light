@@ -25,6 +25,86 @@
     margin-top: 5px;
 }
 
+.staff-card {
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 16px;
+    padding: 24px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+    position: relative;
+    overflow: hidden;
+}
+
+.staff-card:hover {
+    border-color: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.15);
+}
+
+.staff-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #dc2626, #ef4444);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.staff-card:hover::before {
+    opacity: 1;
+}
+
+.staff-card-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #7f1d1d, #dc2626);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    font-size: 24px;
+}
+
+.staff-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #f3f5fb;
+    margin: 0 0 8px 0;
+}
+
+.staff-card-description {
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.staff-card-arrow {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: #64748b;
+    font-size: 20px;
+    transition: color 0.3s ease;
+}
+
+.staff-card:hover .staff-card-arrow {
+    color: #f87171;
+}
+
+.staff-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
 .role-message {
     padding: 16px 20px;
     border-radius: 12px;
@@ -61,35 +141,37 @@
         </div>
     </div>
 <div id="lock" class="role-message loading">Checking permission...</div>
-<div id="box" style="display:none;margin-top:16px">
-<section class="ml-grid">
-<article class="ml-card"><h3>Pending Applications</h3><p id="statApps">0</p><span class="ml-pill">Recruitment</span></article>
-<article class="ml-card"><h3>Active Members</h3><p id="statMembers">0</p><span class="ml-pill">Roster</span></article>
-<article class="ml-card"><h3>Ranks</h3><p id="statRanks">0</p><span class="ml-pill">Structure</span></article>
-</section>
-<section class="ml-grid" style="margin-top:20px">
-<a class="ml-card" href="ems-applications.html"><h3>Applications →</h3><p>Review, interview-flag, accept, or reject EMS applicants.</p></a>
-<a class="ml-card" href="interview-queue.html"><h3>Interview Queue →</h3><p>Schedule and run in-game interviews for approved applicants.</p></a>
-<a class="ml-card" href="ems-members.html"><h3>Members →</h3><p>View and manage the current EMS roster.</p></a>
-<a class="ml-card" href="ems-ranks.html"><h3>Ranks →</h3><p>Manage the department's rank structure and order.</p></a>
-<a class="ml-card" href="ems-promotions.html"><h3>Promotions →</h3><p>Promote or demote members and review promotion history.</p></a>
-<a class="ml-card" href="ems-announcements.html"><h3>Announcements & Internal Notices →</h3><p>Post department announcements and staff-only notices.</p></a>
-</section>
-</div>
+<div id="box" style="display:none;margin-top:16px" class="staff-panel-grid"></div>
 </div>
 </main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
 <script src="assets/portal.js"></script>
 <script>
 const lock=document.getElementById("lock"), box=document.getElementById("box");
 
+const EMS_CARDS=[
+ {href:"ems-applications.html",title:"Applications",desc:"Review, interview-flag, accept, or reject EMS applicants.",icon:"📋"},
+ {href:"interview-queue.html",title:"Interview Queue",desc:"Schedule and run in-game interviews for approved applicants.",icon:"🎯"},
+ {href:"ems-members.html",title:"Members",desc:"View and manage the current EMS roster.",icon:"👥"},
+ {href:"ems-ranks.html",title:"Ranks",desc:"Manage the department's rank structure and order.",icon:"📊"},
+ {href:"ems-promotions.html",title:"Promotions",desc:"Promote or demote members and review promotion history.",icon:"⬆️"},
+ {href:"ems-announcements.html",title:"Announcements & Internal Notices",desc:"Post department announcements and staff-only notices.",icon:"📢"}
+];
+
 (async function initEMSPortal(){
   try{
     if(await mlRoleGate(lock,box,"EMS","EMS Cmd")){
-      const apps=await mlGetApps();
-      const pendingApps=apps.filter(a=>a.type==="EMS"&&a.status==="pending");
-      document.getElementById("statApps").textContent=pendingApps.length;
-      document.getElementById("statMembers").textContent=(await mlDeptMembers("EMS")).length;
-      document.getElementById("statRanks").textContent=(await mlGetRanks("EMS")).length;
+      lock.className="role-message granted";
+      lock.innerHTML="EMS Portal access granted.";
+      
+      box.style.display="grid";
+      box.innerHTML=EMS_CARDS.map(c=>`
+        <a class="staff-card" href="${c.href}">
+            <div class="staff-card-icon">${c.icon}</div>
+            <span class="staff-card-arrow">→</span>
+            <h3 class="staff-card-title">${c.title}</h3>
+            <p class="staff-card-description">${c.desc}</p>
+        </a>
+    `).join("");
     }
   }catch(e){
     console.error("Error initializing EMS portal:",e);
