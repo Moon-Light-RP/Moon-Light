@@ -15,35 +15,47 @@
 </main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
 <script src="assets/portal.js"></script>
 <script>
-const lock=document.getElementById("lock"), box=document.getElementById("box");
-if(mlRoleGate(lock,box,"Settings","Management")) render();
+/* Old client-only role names this page writes into the legacy key-value role
+   map (server.js's getUserRole() fallback reads these exact strings and maps
+   them to the real role IDs — see roleMapping in server.js). */
+const ML_ROLES=["Management","Staff","Police Cmd","EMS Cmd","Streamer Manager"];
+const STAFF_MAP_KEY="moon_light_discord_role_map_v1";
 
+const lock=document.getElementById("lock"), box=document.getElementById("box");
 document.getElementById("roleSel").innerHTML=ML_ROLES.map(r=>`<option>${r}</option>`).join("");
 
-function render(){
-  const m=mlGetRoleMap();
+async function getRoleMap(){const m=await mlGetStore(STAFF_MAP_KEY);return (m&&typeof m==="object")?m:{}}
+async function saveRoleMap(m){return await mlSetStore(STAFF_MAP_KEY,m)}
+
+async function render(){
+  const m=await getRoleMap();
   const keys=Object.keys(m);
   document.getElementById("body").innerHTML=`<tr><th>Discord ID / Username</th><th>Role</th><th></th></tr>`+
     (keys.length?keys.map(k=>`<tr><td>${mlEsc(k)}</td><td><span class="ml-pill">${mlEsc(m[k])}</span></td><td><button class="ml-btn danger" onclick="removeMap('${k.replace(/'/g,"\\'")}')">Remove</button></td></tr>`).join(""):`<tr><td colspan="3">No mappings yet.</td></tr>`);
 }
 
-function addMap(){
+async function addMap(){
   const key=document.getElementById("key").value.trim().toLowerCase();
   const role=document.getElementById("roleSel").value;
   if(!key){alert("Enter a Discord ID or username.");return}
-  const m=mlGetRoleMap();
+  const m=await getRoleMap();
   m[key]=role;
-  mlSaveRoleMap(m);
-  mlLog("Settings",`Discord role mapping set: ${key} → ${role}`,key,`Role: ${role}`);
+  await saveRoleMap(m);
+  await mlLog("Settings",`Discord role mapping set: ${key} → ${role}`,key,`Role: ${role}`);
   document.getElementById("key").value="";
-  render();
+  await render();
 }
-function removeMap(key){
-  const m=mlGetRoleMap();
+async function removeMap(key){
+  const m=await getRoleMap();
   delete m[key];
-  mlSaveRoleMap(m);
-  mlLog("Settings",`Discord role mapping removed`,key,"");
-  render();
+  await saveRoleMap(m);
+  await mlLog("Settings",`Discord role mapping removed`,key,"");
+  await render();
 }
+
+(async function init(){
+  const has=await mlRoleGate(lock,box,"Settings","Management");
+  if(has) await render();
+})();
 </script>
 </body></html>
