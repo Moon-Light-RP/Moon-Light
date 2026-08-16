@@ -21,6 +21,22 @@
 
 <div id="applicationContent" style="display:none">
 <div class="form-hero"><span>MOON LIGHT APPLICATION</span><h1>Tell us about yourself.</h1><p>Take your time. Good applications help us build a better roleplay community.</p></div>
+
+<div id="roleWarning" class="verification-success" style="display:none">
+  <div class="success-content">
+    <h2>⚠️ Application Restrictions</h2>
+    <p id="roleWarningText">Based on your Discord role, you have limited application options.</p>
+  </div>
+</div>
+
+<div id="departmentSelector" style="display:none;margin:20px 0">
+  <div class="two">
+    <button type="button" class="btn" onclick="selectDepartment('CIVILIAN')" id="civilianBtn">Civilian Application</button>
+    <button type="button" class="btn" onclick="selectDepartment('POLICE')" id="policeBtn">Police Application</button>
+    <button type="button" class="btn" onclick="selectDepartment('EMS')" id="emsBtn">EMS Application</button>
+  </div>
+</div>
+
 <div class="steps"><span class="active">01 <small>Application</small></span><i></i><span>02 <small>Review</small></span></div>
 <form class="application-card" id="applicationForm">
 <div class="form-step active">
@@ -97,6 +113,11 @@
   color: #ef4444;
   margin-bottom: 16px;
 }
+.verification-success p {
+  color: #f87171;
+  font-size: 14px;
+  line-height: 1.6;
+}
 .user-info {
   background: #0a0e14;
   padding: 16px;
@@ -112,8 +133,40 @@
 .user-info strong {
   color: #94a3b8;
 }
+
+#departmentSelector .btn {
+  flex: 1;
+  padding: 15px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  background: #111724;
+  border: 1px solid #2a3347;
+  color: #e9edf6;
+}
+
+#departmentSelector .btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.3);
+  border-color: #dc2626;
+}
+
+#departmentSelector .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #1e293b;
+  border-color: #2d3748;
+  color: #64748b;
+}
 </style>
 <script>
+// Discord Role IDs
+const CITIZEN_ROLE_ID = "1535386905749757962";
+const GUEST_ROLE_ID = "1535511253563346956";
+
+let selectedDepartment = "CIVILIAN"; // Default
+let userDiscordRoles = [];
+
 async function checkDiscordVerification() {
   const identity = await mlGetIdentity();
   const role = await mlRole();
@@ -121,6 +174,8 @@ async function checkDiscordVerification() {
   const lock = document.getElementById('verificationLock');
   const success = document.getElementById('verificationSuccess');
   const content = document.getElementById('applicationContent');
+  const roleWarning = document.getElementById('roleWarning');
+  const departmentSelector = document.getElementById('departmentSelector');
   
   if (!identity || !identity.discordId) {
     lock.style.display = 'block';
@@ -143,7 +198,132 @@ async function checkDiscordVerification() {
     discordInput.value = identity.discordId;
   }
   
+  // Try to get user's Discord roles from the identity or Discord API
+  try {
+    const meResponse = await fetch('/auth/me');
+    const meData = await meResponse.json();
+    if (meData.authenticated && meData.user && meData.user.roles) {
+      userDiscordRoles = meData.user.roles;
+    }
+  } catch (e) {
+    console.log('Could not fetch Discord roles, using default behavior');
+  }
+  
+  // Check role-based restrictions
+  await checkRoleRestrictions();
+  
   return true;
+}
+
+async function checkRoleRestrictions() {
+  const roleWarning = document.getElementById('roleWarning');
+  const roleWarningText = document.getElementById('roleWarningText');
+  const departmentSelector = document.getElementById('departmentSelector');
+  const civilianBtn = document.getElementById('civilianBtn');
+  const policeBtn = document.getElementById('policeBtn');
+  const emsBtn = document.getElementById('emsBtn');
+  
+  const hasCitizenRole = userDiscordRoles.includes(CITIZEN_ROLE_ID);
+  const hasGuestRole = userDiscordRoles.includes(GUEST_ROLE_ID);
+  
+  if (hasCitizenRole) {
+    // Citizen: Can only apply to ONE department (either EMS or Police)
+    roleWarning.style.display = 'block';
+    roleWarningText.textContent = "Citizen Role: You can only submit one application total. Choose either EMS or Police, not both.";
+    departmentSelector.style.display = 'block';
+    
+    // Check existing applications
+    try {
+      const response = await fetch('/api/applications');
+      const data = await response.json();
+      
+      if (data.ok && data.applications) {
+        const existingApps = data.applications.filter(app => 
+          ['pending', 'under_review', 'interview', 'accepted'].includes(app.status)
+        );
+        
+        if (existingApps.length > 0) {
+          // User already has an application
+          departmentSelector.style.display = 'none';
+          const appType = existingApps[0].type;
+          selectedDepartment = appType;
+          
+          if (appType === 'CIVILIAN') {
+            civilianBtn.disabled = false;
+            policeBtn.disabled = true;
+            emsBtn.disabled = true;
+          } else if (appType === 'POLICE') {
+            civilianBtn.disabled = true;
+            policeBtn.disabled = false;
+            emsBtn.disabled = true;
+          } else if (appType === 'EMS') {
+            civilianBtn.disabled = true;
+            policeBtn.disabled = true;
+            emsBtn.disabled = false;
+          }
+          
+          roleWarningText.textContent = `Citizen Role: You already have an active ${appType} application. Cannot submit additional applications.`;
+        } else {
+          // No existing applications, let them choose
+          civilianBtn.disabled = true; // Citizen can't apply to civilian
+          policeBtn.disabled = false;
+          emsBtn.disabled = false;
+          selectedDepartment = 'POLICE'; // Default to Police
+        }
+      }
+    } catch (error) {
+      console.error('Error checking existing applications:', error);
+    }
+    
+  } else if (hasGuestRole) {
+    // Guest: Normal applications, can reapply if rejected
+    roleWarning.style.display = 'block';
+    roleWarningText.textContent = "Guest Role: You can submit applications. If rejected, you may apply again.";
+    departmentSelector.style.display = 'block';
+    
+    // Enable all departments
+    civilianBtn.disabled = false;
+    policeBtn.disabled = false;
+    emsBtn.disabled = false;
+    selectedDepartment = 'CIVILIAN'; // Default to Civilian
+    
+  } else {
+    // Normal user: All departments available
+    roleWarning.style.display = 'none';
+    departmentSelector.style.display = 'block';
+    
+    civilianBtn.disabled = false;
+    policeBtn.disabled = false;
+    emsBtn.disabled = false;
+    selectedDepartment = 'CIVILIAN';
+  }
+  
+  // Update button styles
+  updateDepartmentButtons();
+}
+
+function selectDepartment(dept) {
+  selectedDepartment = dept;
+  updateDepartmentButtons();
+}
+
+function updateDepartmentButtons() {
+  const civilianBtn = document.getElementById('civilianBtn');
+  const policeBtn = document.getElementById('policeBtn');
+  const emsBtn = document.getElementById('emsBtn');
+  
+  [civilianBtn, policeBtn, emsBtn].forEach(btn => {
+    btn.style.background = '#111724';
+    btn.style.borderColor = '#2a3347';
+    btn.style.color = '#e9edf6';
+  });
+  
+  const activeBtn = selectedDepartment === 'CIVILIAN' ? civilianBtn : 
+                    selectedDepartment === 'POLICE' ? policeBtn : emsBtn;
+  
+  activeBtn.style.background = '#dc2626';
+  activeBtn.style.borderColor = '#dc2626';
+  activeBtn.style.color = '#f3f5fb';
 }
 
 checkDiscordVerification();
@@ -159,19 +339,44 @@ document.getElementById("applicationForm").addEventListener("submit", async func
     return;
   }
   
-  // Check for existing applications using new API
+  // Check role-based restrictions before submission
+  const hasCitizenRole = userDiscordRoles.includes(CITIZEN_ROLE_ID);
+  const hasGuestRole = userDiscordRoles.includes(GUEST_ROLE_ID);
+  
+  if (hasCitizenRole) {
+    // Citizen: Check if they already have an application
+    try {
+      const response = await fetch('/api/applications');
+      const data = await response.json();
+      
+      if (data.ok && data.applications) {
+        const existingApps = data.applications.filter(app => 
+          ['pending', 'under_review', 'interview', 'accepted'].includes(app.status)
+        );
+        
+        if (existingApps.length > 0) {
+          alert('❌ Citizen Role: You already have an active application. You can only have one application total.');
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking existing applications:', error);
+    }
+  }
+  
+  // Check for existing applications of the same type (for Guest role, allow reapplication if rejected)
   try {
     const response = await fetch('/api/applications');
     const data = await response.json();
     
     if (data.ok && data.applications) {
       const existingApp = data.applications.find(app => 
-        ['pending', 'under_review', 'interview'].includes(app.status)
+        app.type === selectedDepartment && ['pending', 'under_review', 'interview'].includes(app.status)
       );
       
       if (existingApp) {
         const statusText = existingApp.status.replace('_', ' ').toUpperCase();
-        alert(`❌ You already have an active application.\n\nStatus: ${statusText}\nSubmitted: ${new Date(existingApp.created_at).toLocaleString()}\n\nPlease wait for your current application to be processed before submitting a new one.`);
+        alert(`❌ You already have an active ${selectedDepartment} application.\n\nStatus: ${statusText}\nSubmitted: ${new Date(existingApp.created_at).toLocaleString()}\n\nPlease wait for your current application to be processed before submitting a new one.`);
         return;
       }
     }
@@ -181,7 +386,7 @@ document.getElementById("applicationForm").addEventListener("submit", async func
   
   // Submit new application using new API
   const applicationData = {
-    type: "CIVILIAN",
+    type: selectedDepartment,
     character_name: f.name.value,
     steam_url: f.steam.value,
     age: parseInt(f.age.value),
@@ -209,10 +414,11 @@ document.getElementById("applicationForm").addEventListener("submit", async func
       return;
     }
     
-    await mlAddNotification(identity.discordId, ML_NOTIF_TYPES.SUBMITTED, "Civilian application submitted", "Your Civilian application has been received and is awaiting staff review.");
-    await mlCreateTicket("CIVILIAN", identity.discordId, f.name.value);
+    const deptName = selectedDepartment === 'CIVILIAN' ? 'Civilian' : selectedDepartment;
+    await mlAddNotification(identity.discordId, ML_NOTIF_TYPES.SUBMITTED, `${deptName} application submitted`, `Your ${deptName} application has been received and is awaiting staff review.`);
+    await mlCreateTicket(selectedDepartment, identity.discordId, f.name.value);
     
-    alert('✅ Application submitted successfully! Your application is now pending review.');
+    alert(`✅ ${deptName} application submitted successfully! Your application is now pending review.`);
     window.location.href = 'player.html';
   } catch (error) {
     console.error('Error submitting application:', error);

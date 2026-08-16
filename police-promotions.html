@@ -1,9 +1,66 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Police Promotions | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Police Promotions | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"><style>
+.staff-panel-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.staff-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.staff-panel-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #f3f5fb;
+    margin: 0;
+}
+
+.staff-panel-subtitle {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.role-message {
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    font-size: 14px;
+}
+
+.role-message.granted {
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid #dc2626;
+    color: #ef4444;
+}
+
+.role-message.denied {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    color: #f87171;
+}
+
+.role-message.loading {
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid #dc2626;
+    color: #dc2626;
+}
+</style></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
     <nav class="ml-navlinks">
     <a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html" class="">My Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a>
     </nav></header><main class="ml-container">
-<div class="ml-hero"><span class="ml-eyebrow">POLICE / PROMOTIONS</span><h1>Promotions</h1><p>Promote or demote a member and keep a record of every rank change.</p></div>
-<div id="lock" class="role-lock">Checking staff permissions...</div>
+<div class="staff-panel-container">
+    <div class="staff-panel-header">
+        <div>
+            <h1 class="staff-panel-title">Police Promotions</h1>
+            <p class="staff-panel-subtitle">Promote or demote a member and keep a record of every rank change.</p>
+        </div>
+    </div>
+<div id="lock" class="role-message loading">Checking permission...</div>
 <div id="box" style="display:none;margin-top:16px">
 <div class="ml-card">
 <h3>Change Rank</h3>
@@ -17,12 +74,35 @@
 </div>
 <div class="ml-card" style="margin-top:16px"><h3>Promotion History</h3><div id="history"></div></div>
 </div>
+</div>
 </main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
 <script src="assets/portal.js"></script>
 <script>
 const DEPT="POLICE";
 const lock=document.getElementById("lock"), box=document.getElementById("box");
-if(mlRoleGate(lock,box,"Police","Police Cmd")) render();
+(async function initPolicePromotions(){
+  try{
+    if(await mlRoleGate(lock,box,"Police","Police Cmd")){
+      lock.className="role-message granted";
+      lock.innerHTML="Police Promotions access granted.";
+      render();
+    }
+  }catch(e){
+    console.error("Error initializing police promotions:",e);
+    lock.className="role-message denied";
+    lock.innerHTML="Error loading police promotions: " + e.message + ". Please refresh the page.";
+    box.style.display="none";
+  }
+})();
+
+// Add timeout to detect hanging
+setTimeout(() => {
+  if(lock.textContent === "Checking permission..."){
+    console.error("Police promotions initialization timed out");
+    lock.className="role-message denied";
+    lock.innerHTML="Police promotions loading timed out. Please refresh the page.";
+  }
+}, 10000); // 10 second timeout
 
 function render(){
   const members=mlDeptMembers(DEPT);

@@ -1,12 +1,93 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EMS Applications | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a><nav class="ml-navlinks"><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html">Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a></nav></header><main class="ml-container">
-<div class="ml-hero"><span class="ml-eyebrow">EMS STAFF</span><h1>EMS Applications</h1><p>Only staff with EMS Cmd (or Management) permission can review these.</p></div>
-<div id="lock" class="role-lock">Checking permission...</div>
-<div id="apps" style="display:none;margin-top:16px"><div class="ml-actions"><button class="ml-btn" onclick="filterApps('all')">All</button><button class="ml-btn" onclick="filterApps('pending')">Pending</button><button class="ml-btn" onclick="filterApps('interview')">Interview</button><button class="ml-btn" onclick="filterApps('accepted')">Accepted</button><button class="ml-btn danger" onclick="filterApps('rejected')">Rejected</button><a class="ml-btn" href="interview-queue.html">Interview Queue →</a><a class="ml-btn" href="ems-portal.html">EMS Portal →</a></div><div id="list" class="ml-grid"></div></div>
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EMS Applications | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"><style>
+.staff-panel-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.staff-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.staff-panel-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #f3f5fb;
+    margin: 0;
+}
+
+.staff-panel-subtitle {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.role-message {
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    font-size: 14px;
+}
+
+.role-message.granted {
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid #dc2626;
+    color: #ef4444;
+}
+
+.role-message.denied {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    color: #f87171;
+}
+
+.role-message.loading {
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid #dc2626;
+    color: #dc2626;
+}
+</style></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a><nav class="ml-navlinks"><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html">Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a></nav></header><main class="ml-container">
+<div class="staff-panel-container">
+    <div class="staff-panel-header">
+        <div>
+            <h1 class="staff-panel-title">EMS Applications</h1>
+            <p class="staff-panel-subtitle">Only staff with EMS Cmd (or Management) permission can review these.</p>
+        </div>
+    </div>
+<div id="lock" class="role-message loading">Checking permission...</div>
+<div id="apps" style="display:none;margin-top:16px"><div class="ml-actions"><button class="ml-btn" onclick="filterApps('all')">All</button><button class="ml-btn" onclick="filterApps('pending')">Pending</button><button class="ml-btn" onclick="filterApps('interview')">Interview</button><button class="ml-btn" onclick="filterApps('accepted')">Accepted</button><button class="ml-btn danger" onclick="filterApps('rejected')">Rejected</button><a class="ml-btn" href="interview-queue.html">Interview Queue →</a><a class="ml-btn" href="ems-portal.html">EMS Portal →</a></div><div id="list" class="ml-grid"></div>
+</div>
+</div>
 </main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
 <script src="assets/portal.js"></script>
 <script>
 const lock=document.getElementById("lock"), appsBox=document.getElementById("apps");
-if(mlRoleGate(lock,appsBox,"EMS","EMS Cmd")) render("all");
+(async function initEMSApps(){
+  try{
+    if(await mlRoleGate(lock,appsBox,"EMS","EMS Cmd")){
+      lock.className="role-message granted";
+      lock.innerHTML="EMS Applications access granted.";
+      render("all");
+    }
+  }catch(e){
+    console.error("Error initializing EMS applications:",e);
+    lock.className="role-message denied";
+    lock.innerHTML="Error loading EMS applications: " + e.message + ". Please refresh the page.";
+    appsBox.style.display="none";
+  }
+})();
+
+// Add timeout to detect hanging
+setTimeout(() => {
+  if(lock.textContent === "Checking permission..."){
+    console.error("EMS applications initialization timed out");
+    lock.className="role-message denied";
+    lock.innerHTML="EMS applications loading timed out. Please refresh the page.";
+  }
+}, 10000); // 10 second timeout
 
 function render(filter){
   const all=mlGetApps();

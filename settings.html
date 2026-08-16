@@ -62,19 +62,18 @@
 
 <div class="ml-card ml-form" style="margin-top:16px">
 <h3>FiveM Server Status</h3>
-<p class="ml-muted">Server status information displayed on the homepage.</p>
+<p class="ml-muted">Server status information is automatically synced from the live FiveM server (92.205.184.235). Updates every 30 seconds.</p>
 <div class="form-grid">
 <div class="form-group">
-<label>Status<select id="svOnline"><option value="true">Online</option><option value="false">Offline</option></select></label>
+<label>Status<select id="svOnline" disabled><option value="true">Online</option><option value="false">Offline</option></select></label>
 </div>
 <div class="form-group">
-<label>Current Players<input id="svPlayers" type="number" min="0"></label>
+<label>Current Players<input id="svPlayers" type="number" min="0" disabled></label>
 </div>
 <div class="form-group">
-<label>Max Players<input id="svMax" type="number" min="1"></label>
+<label>Max Players<input id="svMax" type="number" min="1" disabled></label>
 </div>
 </div>
-<button class="ml-btn primary" onclick="saveServerStatus()">Update Status</button>
 <p class="ml-muted" id="lastSync" style="margin-top:8px"></p>
 </div>
 
@@ -97,23 +96,32 @@ const lock=document.getElementById("lock"), box=document.getElementById("box");
     lock.className="role-message granted";
     lock.innerHTML="Settings access granted. Management controls available.";
     try{
-      const s=mlGetServerStatus();
+      const s=await mlGetServerStatus();
       document.getElementById("svOnline").value=String(s.online);
       document.getElementById("svPlayers").value=s.players;
       document.getElementById("svMax").value=s.maxPlayers;
       document.getElementById("lastSync").textContent="Last updated: "+mlFmt(s.lastSync);
+      
+      // Periodically refresh status from server
+      setInterval(async () => {
+        try {
+          const response = await fetch('/api/server-status');
+          const data = await response.json();
+          if (data.ok && data.status) {
+            const s = data.status;
+            document.getElementById("svOnline").value=String(s.online);
+            document.getElementById("svPlayers").value=s.players;
+            document.getElementById("svMax").value=s.maxPlayers;
+            document.getElementById("lastSync").textContent="Last updated: "+mlFmt(s.lastSync);
+          }
+        } catch (e) {
+          console.error('Error refreshing server status:', e);
+        }
+      }, 15000); // Refresh every 15 seconds
     }catch(e){
       console.error("Error loading settings:",e);
     }
   }
 })();
-
-async function saveServerStatus(){
-  const s={online:document.getElementById("svOnline").value==="true",players:Number(document.getElementById("svPlayers").value)||0,maxPlayers:Number(document.getElementById("svMax").value)||1};
-  await mlSaveServerStatus(s);
-  await mlLog("Settings",`Server status updated`,s.online?"Online":"Offline",`${s.players}/${s.maxPlayers} players`);
-  document.getElementById("lastSync").textContent="Last updated: "+mlFmt(mlGetServerStatus().lastSync);
-  alert("Server status updated.");
-}
 </script>
 </body></html>

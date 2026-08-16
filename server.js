@@ -424,6 +424,11 @@ app.post('/api/applications', requireDiscordUser, async (req, res) => {
       })
     });
     
+    // Send Discord webhook notification
+    const appData = { ...req.body, discord_id: discordId, discord_username: discordUsername };
+    const embed = createApplicationEmbed(appData, req.body.type);
+    await sendDiscordWebhook(APPLICATIONS_WEBHOOK_ID, embed);
+    
     res.json({ ok: true, application: application[0] });
   } catch (error) {
     console.error('Applications POST error:', error);
@@ -859,6 +864,101 @@ app.get('/api/audit-logs', requirePermission('audit.view'), async (req, res) => 
   }
 });
 
+// Discord Webhook for Application Notifications
+// To set up: Go to Discord Server Settings → Integrations → Webhooks → Create Webhook
+// Copy the webhook URL and add it to environment variables as DISCORD_WEBHOOK_1538448096072179772
+const APPLICATIONS_WEBHOOK_ID = '1538448096072179772';
+
+async function sendDiscordWebhook(webhookId, embed) {
+  try {
+    const webhookUrl = process.env[`DISCORD_WEBHOOK_${webhookId}`];
+    if (!webhookUrl) {
+      console.log(`No webhook URL configured for ${webhookId}. Applications will still be saved to the website.`);
+      return false;
+    }
+
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ embeds: [embed] })
+    });
+
+    if (response.ok) {
+      console.log(`Discord webhook sent successfully to ${webhookId}`);
+      return true;
+    } else {
+      console.error(`Discord webhook failed for ${webhookId}:`, response.status);
+      return false;
+    }
+  } catch (error) {
+    console.error(`Error sending Discord webhook to ${webhookId}:`, error);
+    // Don't fail the application submission if webhook fails
+    return false;
+  }
+}
+
+// Create application embed for Discord
+function createApplicationEmbed(application, type) {
+  const typeColors = {
+    'CIVILIAN': 0x9900ff,
+    'POLICE': 0x0066ff,
+    'EMS': 0xff0000
+  };
+
+  const color = typeColors[type] || 0x9900ff;
+
+  return {
+    title: `New ${type} Application`,
+    color: color,
+    fields: [
+      {
+        name: 'Character Name',
+        value: application.character_name || 'Unknown',
+        inline: true
+      },
+      {
+        name: 'Discord User',
+        value: application.discord_username || 'Unknown',
+        inline: true
+      },
+      {
+        name: 'Discord ID',
+        value: application.discord_id || 'Unknown',
+        inline: true
+      },
+      {
+        name: 'Age',
+        value: String(application.age || 'Unknown'),
+        inline: true
+      },
+      {
+        name: 'Experience',
+        value: application.experience || 'Unknown',
+        inline: true
+      },
+      {
+        name: 'Steam Profile',
+        value: application.steam_url || 'Not provided',
+        inline: false
+      },
+      {
+        name: 'Backstory',
+        value: (application.backstory || 'Not provided').substring(0, 1024),
+        inline: false
+      },
+      {
+        name: 'Why Join',
+        value: (application.why_join || 'Not provided').substring(0, 1024),
+        inline: false
+      }
+    ],
+    timestamp: new Date().toISOString(),
+    footer: {
+      text: 'MOON LIGHT RolePlay'
+    }
+  };
+}
+
 // Delete audit log (soft delete only)
 app.delete('/api/audit-logs/:id', requirePermission('audit.view'), async (req, res) => {
   try {
@@ -1040,11 +1140,31 @@ app.get('/auth/discord/callback', async (req, res) => {
       throw new Error(user.message || 'Discord user lookup failed.');
     }
 
+    // Fetch user's guild roles
+    let userRoles = [];
+    try {
+      const guildId = process.env.DISCORD_GUILD_ID;
+      if (guildId) {
+        const guildMemberResponse = await fetch(`https://discord.com/api/v10/users/@me/guilds/${guildId}/member`, {
+          headers: { Authorization: `Bearer ${tokenData.access_token}` }
+        });
+        const guildMember = await guildMemberResponse.json();
+        
+        if (guildMemberResponse.ok && guildMember.roles) {
+          userRoles = guildMember.roles;
+          console.log('User Discord roles:', userRoles);
+        }
+      }
+    } catch (error) {
+      console.log('Could not fetch guild roles, using empty array:', error.message);
+    }
+
     req.session.discordUser = {
       id: user.id,
       username: user.username,
       global_name: user.global_name || user.username,
-      avatar: user.avatar || null
+      avatar: user.avatar || null,
+      roles: userRoles
     };
 
     console.log('Discord login successful - session set:', {
@@ -1069,10 +1189,17 @@ app.get('/auth/logout', (req, res) => {
 });
 
 app.get('/auth/me', (req, res) => {
+  const discordUser = req.session?.discordUser;
   res.json({
-    authenticated: Boolean(req.session?.discordUser?.id),
+    authenticated: Boolean(discordUser?.id),
     configured: Boolean(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET && process.env.DISCORD_REDIRECT_URI),
-    user: req.session?.discordUser || null,
+    user: discordUser ? {
+      id: discordUser.id,
+      username: discordUser.username,
+      global_name: discordUser.global_name || discordUser.username,
+      avatar: discordUser.avatar || null,
+      roles: discordUser.roles || []
+    } : null,
     sessionDebug: {
       hasSession: !!req.session,
       hasOAuthState: !!req.session?.oauthState,
@@ -1081,6 +1208,92 @@ app.get('/auth/me', (req, res) => {
     }
   });
 });
+
+// -----------------------------------------------------------------------------
+// FiveM Server Status
+// -----------------------------------------------------------------------------
+const FIVEM_SERVER_IP = '92.205.184.235';
+
+// Fetch real server status from FiveM server
+async function fetchFiveMStatus() {
+  try {
+    const response = await fetch(`http://${FIVEM_SERVER_IP}/info.json`, {
+      timeout: 5000
+    });
+    
+    if (response.ok) {
+      const serverInfo = await response.json();
+      return {
+        online: true,
+        players: serverInfo.vars?.sv_maxclients || 0,
+        maxPlayers: serverInfo.vars?.sv_maxclients || 128,
+        hostname: serverInfo.vars?.sv_hostname || 'MOON LIGHT RolePlay',
+        lastSync: new Date().toISOString()
+      };
+    }
+  } catch (error) {
+    console.log('Could not fetch real server status:', error.message);
+  }
+  
+  // Fallback to stored status
+  try {
+    const storedStatus = await supabaseRequest('ml_store?key=eq.moon_light_server_status_v1&select=value');
+    if (storedStatus && storedStatus.length > 0) {
+      const statusData = typeof storedStatus[0].value === 'string' 
+        ? JSON.parse(storedStatus[0].value) 
+        : storedStatus[0].value;
+      return {
+        online: statusData.online || false,
+        players: statusData.players || 0,
+        maxPlayers: statusData.maxPlayers || 128,
+        hostname: 'MOON LIGHT RolePlay',
+        lastSync: statusData.lastSync
+      };
+    }
+  } catch (e) {
+    console.log('Could not fetch stored status:', e.message);
+  }
+  
+  return {
+    online: false,
+    players: 0,
+    maxPlayers: 128,
+    hostname: 'MOON LIGHT RolePlay',
+    lastSync: new Date().toISOString()
+  };
+}
+
+// Endpoint to get real server status
+app.get('/api/server-status', async (req, res) => {
+  try {
+    const status = await fetchFiveMStatus();
+    res.json({ ok: true, status });
+  } catch (error) {
+    console.error('Error fetching server status:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch server status' });
+  }
+});
+
+// Periodically update server status (every 30 seconds)
+setInterval(async () => {
+  try {
+    const status = await fetchFiveMStatus();
+    
+    // Update stored status using the same pattern as /api/store
+    await supabaseRequest('ml_store', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({
+        key: 'moon_light_server_status_v1',
+        value: JSON.stringify(status)
+      })
+    });
+    
+    console.log('Server status updated:', status);
+  } catch (error) {
+    console.error('Error updating server status:', error);
+  }
+}, 30000); // 30 seconds
 
 // -----------------------------------------------------------------------------
 // One-time bootstrap route.

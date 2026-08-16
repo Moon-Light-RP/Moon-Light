@@ -30,7 +30,7 @@
       <a class="btn" href="application.html">Apply to Join <span>→</span></a>
       <a class="btn ghost" href="https://discord.gg/E4TyrppE6q" target="_blank">Connect Discord</a>
     </div>
-    <div class="hero-links"><a href="https://discord.gg/E4TyrppE6q" target="_blank">Discord ↗</a><a href="application.html">Connect to FiveM ↗</a></div>
+    <div class="hero-links"><a href="https://discord.gg/E4TyrppE6q" target="_blank">Discord ↗</a><a href="fivem://connect/92.205.184.235">Connect to FiveM ↗</a></div>
   </div>
   <div class="moon-wrap"><div class="moon">☾</div><div class="moon-ring"></div><div class="moon-label">EST. 2026</div></div>
 </section>
@@ -97,14 +97,71 @@
 <script src="assets/ml.js"></script>
 <script src="assets/portal.js"></script>
 <script>
-/* Live FiveM server status (simulated snapshot, managed from Settings) */
+/* Live FiveM server status - connects to real server */
+const FIVEM_SERVER_IP = "92.205.184.235";
+
+async function fetchRealServerStatus() {
+  try {
+    // Try to fetch from our API first (which connects to real server)
+    const response = await fetch('/api/server-status');
+    if (response.ok) {
+      const data = await response.json();
+      if (data.ok && data.status) {
+        return data.status;
+      }
+    }
+  } catch (error) {
+    console.log('Could not fetch from API, trying direct connection:', error.message);
+  }
+  
+  // Fallback: try direct connection to FiveM server
+  try {
+    const response = await fetch(`http://${FIVEM_SERVER_IP}/info.json`);
+    if (response.ok) {
+      const serverInfo = await response.json();
+      return {
+        online: true,
+        players: serverInfo.vars?.sv_maxclients || 0,
+        maxPlayers: serverInfo.vars?.sv_maxclients || 128,
+        hostname: serverInfo.vars?.sv_hostname || "MOON LIGHT RolePlay"
+      };
+    }
+  } catch (error) {
+    console.log('Could not fetch real server status, using fallback:', error.message);
+  }
+  
+  // Final fallback to settings if real server is unavailable
+  try {
+    const s = await mlGetServerStatus();
+    return {
+      online: s.online,
+      players: s.players,
+      maxPlayers: s.maxPlayers,
+      hostname: "MOON LIGHT RolePlay"
+    };
+  } catch (e) {
+    return {
+      online: false,
+      players: 0,
+      maxPlayers: 128,
+      hostname: "MOON LIGHT RolePlay"
+    };
+  }
+}
+
 (async function(){
-  const s=await mlGetServerStatus();
-  document.getElementById("playerCount").textContent=`${s.players} / ${s.maxPlayers}`;
-  document.getElementById("statPlayers").textContent=s.players;
-  document.getElementById("statCapacity").textContent=s.maxPlayers;
-  document.getElementById("statusLabel").textContent=s.online?"SERVER ONLINE":"SERVER OFFLINE";
-  document.getElementById("statusDot").style.background=s.online?"#ef4444":"#dc2626";
+  const serverStatus = await fetchRealServerStatus();
+  document.getElementById("playerCount").textContent=`${serverStatus.players} / ${serverStatus.maxPlayers}`;
+  document.getElementById("statPlayers").textContent=serverStatus.players;
+  document.getElementById("statCapacity").textContent=serverStatus.maxPlayers;
+  document.getElementById("statusLabel").textContent=serverStatus.online?"SERVER ONLINE":"SERVER OFFLINE";
+  document.getElementById("statusDot").style.background=serverStatus.online?"#ef4444":"#dc2626";
+  
+  // Update hero links with real server connection
+  const fivemLink = document.querySelector('a[href="fivem://connect/92.205.184.235"]');
+  if (fivemLink) {
+    fivemLink.href = `fivem://connect/${FIVEM_SERVER_IP}`;
+  }
 })();
 
 /* Streamers added via Staff Panel → Streamers render here automatically. */
