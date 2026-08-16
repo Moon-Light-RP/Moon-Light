@@ -414,7 +414,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_area ON audit_logs(area);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_staff_roles_discord_id ON staff_roles(discord_id);
-CREATE INDEX IF NOT EXISTS idx_staff_roles_role ON staff_roles(role);
+CREATE INDEX IF NOT EXISTS idx_staff_roles_role ON staff_roles(role_id);
 
 CREATE INDEX IF NOT EXISTS idx_police_members_discord_id ON police_members(discord_id);
 CREATE INDEX IF NOT EXISTS idx_police_members_status ON police_members(status);
