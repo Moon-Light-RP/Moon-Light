@@ -91,16 +91,62 @@ const ML_ROLE_IDS={
   EMS_MANAGEMENT:"EMS_MANAGEMENT_ROLE_ID"
 };
 
+// Also check role name for Management
+async function isManagement(){
+  try{
+    const roleName=await mlGetRoleName();
+    return roleName==="Management";
+  }catch(e){
+    console.error('Error checking management role:', e);
+    return false;
+  }
+}
+
 /* Work out which departments this viewer is allowed to see. */
 async function allowedDepts(){
   try{
+    // First check if user is logged in
+    const identity = await mlGetIdentity();
+    if(!identity || !identity.discordId){
+      console.log('No identity found, returning empty departments');
+      return [];
+    }
+    
     const roleId=await mlRole();
     const roleName=await mlGetRoleName();
-    if(roleId===ML_ROLE_IDS.MANAGEMENT)return["CIVILIAN","POLICE","EMS"];
+    
+    console.log('allowedDepts:', { roleId, roleName, identity });
+    
+    // Management gets everything
+    if(roleId===ML_ROLE_IDS.MANAGEMENT || roleName==="Management" || await isManagement()){
+      console.log('Management role detected, returning all departments');
+      return["CIVILIAN","POLICE","EMS"];
+    }
+    
     const d=[];
-    if(await mlHasPerm("Applications"))d.push("CIVILIAN");
-    if(await mlHasPerm("police.view"))d.push("POLICE");
-    if(await mlHasPerm("ems.view"))d.push("EMS");
+    try{
+      if(await mlHasPerm("Applications"))d.push("CIVILIAN");
+    }catch(e){
+      console.log('Could not check Applications permission:', e);
+    }
+    try{
+      if(await mlHasPerm("police.view"))d.push("POLICE");
+    }catch(e){
+      console.log('Could not check police.view permission:', e);
+    }
+    try{
+      if(await mlHasPerm("ems.view"))d.push("EMS");
+    }catch(e){
+      console.log('Could not check ems.view permission:', e);
+    }
+    
+    // Fallback: if logged in but no permissions, show at least civilian
+    if(d.length===0){
+      console.log('No permissions found, adding CIVILIAN as fallback');
+      d.push("CIVILIAN");
+    }
+    
+    console.log('Allowed departments:', d);
     return d;
   }catch(e){
     console.error("Error in allowedDepts:",e);
@@ -109,20 +155,31 @@ async function allowedDepts(){
 }
 
 async function checkAccess(){
-  const depts=await allowedDepts();
-  const roleId=await mlRole();
-  const roleName=await mlGetRoleName();
-  if(depts.length){
-    lock.className="role-message granted";
-    lock.innerHTML=`Access granted — showing: ${depts.map(d=>d==="CIVILIAN"?"Civilian":d).join(", ")}. Your role: <b>${roleName||"Player"}</b>`;
-    box.style.display="block";
-    document.getElementById("deptFilters").style.display=depts.length>1?"flex":"none";
-    return true;
+  try{
+    const depts=await allowedDepts();
+    const roleId=await mlRole();
+    const roleName=await mlGetRoleName();
+    
+    console.log('checkAccess:', { depts, roleId, roleName });
+    
+    if(depts.length){
+      lock.className="role-message granted";
+      lock.innerHTML=`Access granted — showing: ${depts.map(d=>d==="CIVILIAN"?"Civilian":d).join(", ")}. Your role: <b>${roleName||"Player"}</b>`;
+      box.style.display="block";
+      document.getElementById("deptFilters").style.display=depts.length>1?"flex":"none";
+      return true;
+    }
+    lock.className="role-message denied";
+    lock.innerHTML=`Access denied. Your role doesn't have access to any application queue. Your role: <b>${roleName||"Player"}</b>`;
+    box.style.display="none";
+    return false;
+  }catch(e){
+    console.error("Error in checkAccess:",e);
+    lock.className="role-message denied";
+    lock.innerHTML="Error checking access: " + e.message + ". Please refresh the page.";
+    box.style.display="none";
+    return false;
   }
-  lock.className="role-message denied";
-  lock.innerHTML=`Access denied. Your role doesn't have access to any application queue. Your role: <b>${roleName||"Player"}</b>`;
-  box.style.display="none";
-  return false;
 }
 
 function setStatus(s){statusFilter=s;render()}
@@ -132,7 +189,19 @@ async function render(){
   if(!(await checkAccess()))return;
   searchTerm=document.getElementById("search").value.trim().toLowerCase();
   const depts=await allowedDepts();
-  const all=await mlGetApps();
+  
+  console.log('render:', { depts, deptFilter, statusFilter, searchTerm });
+  
+  let all=[];
+  try{
+    all=await mlGetApps();
+    console.log('Got applications:', all.length);
+  }catch(e){
+    console.error('Error fetching applications:', e);
+    document.getElementById("list").innerHTML=`<div class="ml-card" style="grid-column:1/-1">Error loading applications: ${e.message}</div>`;
+    return;
+  }
+  
   let rows=all.map((a,i)=>({a,i})).filter(x=>depts.includes(x.a.type));
   if(deptFilter!=="all")rows=rows.filter(x=>x.a.type===deptFilter);
   if(statusFilter!=="all")rows=rows.filter(x=>(x.a.status||"pending")===statusFilter);
@@ -215,7 +284,12 @@ async function assignApp(i){
 
 (async function initStaffApplications(){
   try{
-    if(await checkAccess()) await render();
+    console.log('Initializing staff applications...');
+    const hasAccess = await checkAccess();
+    console.log('Has access:', hasAccess);
+    if(hasAccess){
+      await render();
+    }
   }catch(e){
     console.error("Error initializing staff applications:",e);
     lock.className="role-message denied";
