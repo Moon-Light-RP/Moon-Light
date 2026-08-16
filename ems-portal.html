@@ -81,16 +81,32 @@
 <script src="assets/portal.js"></script>
 <script>
 const lock=document.getElementById("lock"), box=document.getElementById("box");
-async function initEMSPortal(){
-  if(await mlRoleGate(lock,box,"EMS","EMS Cmd")){
-    const apps=await mlGetApps();
-    const pendingApps=apps.filter(a=>a.type==="EMS"&&a.status==="pending");
-    document.getElementById("statApps").textContent=pendingApps.length;
-    document.getElementById("statMembers").textContent=(await mlDeptMembers("EMS")).length;
-    document.getElementById("statRanks").textContent=(await mlGetRanks("EMS")).length;
+
+(async function initEMSPortal(){
+  try{
+    if(await mlRoleGate(lock,box,"EMS","EMS Cmd")){
+      const apps=await mlGetApps();
+      const pendingApps=apps.filter(a=>a.type==="EMS"&&a.status==="pending");
+      document.getElementById("statApps").textContent=pendingApps.length;
+      document.getElementById("statMembers").textContent=(await mlDeptMembers("EMS")).length;
+      document.getElementById("statRanks").textContent=(await mlGetRanks("EMS")).length;
+    }
+  }catch(e){
+    console.error("Error initializing EMS portal:",e);
+    lock.className="role-message denied";
+    lock.innerHTML="Error loading EMS portal: " + e.message + ". Please refresh the page.";
+    box.style.display="none";
   }
-}
-initEMSPortal();
+})();
+
+// Add timeout to detect hanging
+setTimeout(() => {
+  if(lock.textContent === "Checking permission..."){
+    console.error("EMS portal initialization timed out");
+    lock.className="role-message denied";
+    lock.innerHTML="EMS portal loading timed out. Please refresh the page.";
+  }
+}, 10000); // 10 second timeout
 </script>
 </body></html>
 

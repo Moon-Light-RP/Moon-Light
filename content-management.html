@@ -115,42 +115,46 @@ document.addEventListener('DOMContentLoaded', () => {
   setTab("rules");
 });
 
-function render(){
-  const c=mlGetContent();
-  document.getElementById("rulesList").innerHTML=c.rules.map((r,i)=>`<article class="ml-card"><h3>${i+1}. ${mlEsc(r.title)}</h3><p>${mlEsc(r.body)}</p><button class="ml-btn danger" onclick="removeRule(${i})">Remove</button></article>`).join("");
-  document.getElementById("faqList").innerHTML=c.faq.map((f,i)=>`<article class="ml-card"><h3>${mlEsc(f.q)}</h3><p>${mlEsc(f.a)}</p><button class="ml-btn danger" onclick="removeFaq(${i})">Remove</button></article>`).join("");
-  document.getElementById("annList").innerHTML=c.siteAnnouncements.length?c.siteAnnouncements.map((a,i)=>`<article class="ml-card"><span class="ml-eyebrow">${mlFmt(a.date)}</span><h3 style="margin-top:8px">${mlEsc(a.title)}</h3><p>${mlEsc(a.body)}</p><button class="ml-btn danger" onclick="removeAnn(${i})">Remove</button></article>`).join(""):`<div class="ml-card" style="grid-column:1/-1">No website announcements posted.</div>`;
+async function render(){
+  const c=await mlGetContent();
+  const rules=c.rules||[];
+  const faq=c.faq||[];
+  const siteAnnouncements=c.siteAnnouncements||[];
+  
+  document.getElementById("rulesList").innerHTML=rules.map((r,i)=>`<article class="ml-card"><h3>${i+1}. ${mlEsc(r.title)}</h3><p>${mlEsc(r.body)}</p><button class="ml-btn danger" onclick="removeRule(${i})">Remove</button></article>`).join("");
+  document.getElementById("faqList").innerHTML=faq.map((f,i)=>`<article class="ml-card"><h3>${mlEsc(f.q)}</h3><p>${mlEsc(f.a)}</p><button class="ml-btn danger" onclick="removeFaq(${i})">Remove</button></article>`).join("");
+  document.getElementById("annList").innerHTML=siteAnnouncements.length?siteAnnouncements.map((a,i)=>`<article class="ml-card"><span class="ml-eyebrow">${mlFmt(a.date)}</span><h3 style="margin-top:8px">${mlEsc(a.title)}</h3><p>${mlEsc(a.body)}</p><button class="ml-btn danger" onclick="removeAnn(${i})">Remove</button></article>`).join(""):`<div class="ml-card" style="grid-column:1/-1">No website announcements posted.</div>`;
 }
 
-function addRule(){
+async function addRule(){
   const title=document.getElementById("rTitle").value.trim(), body=document.getElementById("rBody").value.trim();
   if(!title||!body){alert("Title and description are required.");return}
-  const c=mlGetContent(); c.rules.push({title,body}); mlSaveContent(c);
-  mlLog("Settings","Rule added",title,"");
+  const c=await mlGetContent(); c.rules.push({title,body}); await mlSaveContent(c);
+  await mlLog("Settings","Rule added",title,"");
   document.getElementById("rTitle").value="";document.getElementById("rBody").value="";
-  render();
+  await render();
 }
-function removeRule(i){const c=mlGetContent();const r=c.rules.splice(i,1)[0];mlSaveContent(c);mlLog("Settings","Rule removed",r?.title||"","");render()}
+async function removeRule(i){const c=await mlGetContent();const r=c.rules.splice(i,1)[0];await mlSaveContent(c);await mlLog("Settings","Rule removed",r?.title||"","");await render()}
 
-function addFaq(){
+async function addFaq(){
   const q=document.getElementById("fQ").value.trim(), a=document.getElementById("fA").value.trim();
   if(!q||!a){alert("Question and answer are required.");return}
-  const c=mlGetContent(); c.faq.push({q,a}); mlSaveContent(c);
-  mlLog("Settings","FAQ entry added",q,"");
+  const c=await mlGetContent(); c.faq.push({q,a}); await mlSaveContent(c);
+  await mlLog("Settings","FAQ entry added",q,"");
   document.getElementById("fQ").value="";document.getElementById("fA").value="";
-  render();
+  await render();
 }
-function removeFaq(i){const c=mlGetContent();const f=c.faq.splice(i,1)[0];mlSaveContent(c);mlLog("Settings","FAQ entry removed",f?.q||"","");render()}
+async function removeFaq(i){const c=await mlGetContent();const f=c.faq.splice(i,1)[0];await mlSaveContent(c);await mlLog("Settings","FAQ entry removed",f?.q||"","");await render()}
 
-function addAnn(){
+async function addAnn(){
   const title=document.getElementById("aTitle").value.trim(), body=document.getElementById("aBody").value.trim();
   if(!title||!body){alert("Title and message are required.");return}
-  const c=mlGetContent(); c.siteAnnouncements.unshift({title,body,date:new Date().toISOString()}); mlSaveContent(c);
-  mlAddNotification(null,ML_NOTIF_TYPES.STAFF_ANNOUNCEMENT,title,body);
-  mlLog("Settings","Website announcement posted",title,"");
+  const c=await mlGetContent(); c.siteAnnouncements.unshift({title,body,date:new Date().toISOString()}); await mlSaveContent(c);
+  await mlAddNotification(null,ML_NOTIF_TYPES.STAFF_ANNOUNCEMENT,title,body);
+  await mlLog("Settings","Website announcement posted",title,"");
   document.getElementById("aTitle").value="";document.getElementById("aBody").value="";
-  render();
+  await render();
 }
-function removeAnn(i){const c=mlGetContent();const a=c.siteAnnouncements.splice(i,1)[0];mlSaveContent(c);mlLog("Settings","Website announcement removed",a?.title||"","");render()}
+async function removeAnn(i){const c=await mlGetContent();const a=c.siteAnnouncements.splice(i,1)[0];await mlSaveContent(c);await mlLog("Settings","Website announcement removed",a?.title||"","");await render()}
 </script>
 </body></html>

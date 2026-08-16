@@ -70,7 +70,7 @@ const lock=document.getElementById("lock"), appsBox=document.getElementById("app
     if(await mlRoleGate(lock,appsBox,"EMS","EMS Cmd")){
       lock.className="role-message granted";
       lock.innerHTML="EMS Applications access granted.";
-      render("all");
+      await render("all");
     }
   }catch(e){
     console.error("Error initializing EMS applications:",e);
@@ -89,8 +89,8 @@ setTimeout(() => {
   }
 }, 10000); // 10 second timeout
 
-function render(filter){
-  const all=mlGetApps();
+async function render(filter){
+  const all=await mlGetApps();
   const list=all.filter(a=>a.type==="EMS").filter(a=>filter==="all"||a.status===filter);
   document.getElementById("list").innerHTML=list.length?list.map(a=>{
     const i=all.indexOf(a);
@@ -98,14 +98,14 @@ function render(filter){
   }).join(""):`<div class="ml-card" style="grid-column:1/-1">No EMS applications found.</div>`;
 }
 function filterApps(x){render(x)}
-function setStatus(i,status){
-  const all=mlGetApps();const a=all[i];if(!a)return;
+async function setStatus(i,status){
+  const all=await mlGetApps();const a=all[i];if(!a)return;
   const prev=a.status||"pending";
-  a.status=status;mlSaveApps(all);
-  if(status==="accepted"){mlAddNotification(a.discord,ML_NOTIF_TYPES.APPROVED,"EMS application approved","Your EMS application has been approved.");mlAddNotification(a.discord,ML_NOTIF_TYPES.DEPT_ACCEPTED,"Welcome to EMS","You are now accepted into the EMS department.")}
-  else if(status==="rejected")mlAddNotification(a.discord,ML_NOTIF_TYPES.REJECTED,"EMS application rejected","Your EMS application was not accepted this time.");
-  mlLog("EMS",`Status changed: ${prev} → ${status}`,a.characterName||"Unknown",`Discord: ${a.discord||"—"}`);
-  render("all");
+  a.status=status;await mlSaveApps(all);
+  if(status==="accepted"){await mlAddNotification(a.discord,ML_NOTIF_TYPES.APPROVED,"EMS application approved","Your EMS application has been approved.");await mlAddNotification(a.discord,ML_NOTIF_TYPES.DEPT_ACCEPTED,"Welcome to EMS","You are now accepted into the EMS department.")}
+  else if(status==="rejected")await mlAddNotification(a.discord,ML_NOTIF_TYPES.REJECTED,"EMS application rejected","Your EMS application was not accepted this time.");
+  await mlLog("EMS",`Status changed: ${prev} → ${status}`,a.characterName||"Unknown",`Discord: ${a.discord||"—"}`);
+  await render("all");
 }
 </script>
 </body>

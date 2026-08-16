@@ -81,16 +81,32 @@
 <script src="assets/portal.js"></script>
 <script>
 const lock=document.getElementById("lock"), box=document.getElementById("box");
-async function initPolicePortal(){
-  if(await mlRoleGate(lock,box,"Police","Police Cmd")){
-    const apps=await mlGetApps();
-    const pendingApps=apps.filter(a=>a.type==="POLICE"&&a.status==="pending");
-    document.getElementById("statApps").textContent=pendingApps.length;
-    document.getElementById("statMembers").textContent=(await mlDeptMembers("POLICE")).length;
-    document.getElementById("statRanks").textContent=(await mlGetRanks("POLICE")).length;
+
+(async function initPolicePortal(){
+  try{
+    if(await mlRoleGate(lock,box,"Police","Police Cmd")){
+      const apps=await mlGetApps();
+      const pendingApps=apps.filter(a=>a.type==="POLICE"&&a.status==="pending");
+      document.getElementById("statApps").textContent=pendingApps.length;
+      document.getElementById("statMembers").textContent=(await mlDeptMembers("POLICE")).length;
+      document.getElementById("statRanks").textContent=(await mlGetRanks("POLICE")).length;
+    }
+  }catch(e){
+    console.error("Error initializing police portal:",e);
+    lock.className="role-message denied";
+    lock.innerHTML="Error loading police portal: " + e.message + ". Please refresh the page.";
+    box.style.display="none";
   }
-}
-initPolicePortal();
+})();
+
+// Add timeout to detect hanging
+setTimeout(() => {
+  if(lock.textContent === "Checking permission..."){
+    console.error("Police portal initialization timed out");
+    lock.className="role-message denied";
+    lock.innerHTML="Police portal loading timed out. Please refresh the page.";
+  }
+}, 10000); // 10 second timeout
 </script>
 </body></html>
 

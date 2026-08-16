@@ -112,54 +112,56 @@ setTimeout(() => {
   }
 }, 10000); // 10 second timeout
 
-function render(){
-  const members=mlDeptMembers(DEPT);
-  const apps=mlGetApps().filter(a=>a.type===DEPT&&a.status==="accepted");
+async function render(){
+  const members=await mlDeptMembers(DEPT);
+  const apps=(await mlGetApps()).filter(a=>a.type===DEPT&&a.status==="accepted");
   const notImported=apps.filter(a=>!members.some(m=>m.discord===a.discord));
   document.getElementById("importList").innerHTML=notImported.length?notImported.map(a=>`<article class="ml-card"><h3>${mlEsc(a.characterName)}</h3><p class="ml-muted">${mlEsc(a.discord)}</p><button class="ml-btn primary" onclick="importApp('${mlEsc(a.discord).replace(/'/g,"\\'")}','${mlEsc(a.characterName).replace(/'/g,"\\'")}')">Add to Roster</button></article>`).join(""):`<div class="ml-muted">No pending accepted applicants to import.</div>`;
 
-  const ranks=mlGetRanks(DEPT);
+  const ranks=await mlGetRanks(DEPT);
   document.getElementById("rosterBody").innerHTML=`<tr><th>Name</th><th>Discord</th><th>Rank</th><th>Joined</th><th></th></tr>`+
     (members.length?members.map((m,i)=>`<tr><td>${mlEsc(m.name)}</td><td>${mlEsc(m.discord)}</td><td><span class="ml-pill">${mlEsc(m.rank)}</span></td><td>${mlFmt(m.joined)}</td><td><button class="ml-btn danger" onclick="removeMember(${i})">Remove</button></td></tr>`).join(""):`<tr><td colspan="5">No members yet.</td></tr>`);
 }
 
 const AREA=DEPT==="POLICE"?"Police":"EMS";
 
-function importApp(discord,name){
-  const members=mlDeptMembers(DEPT);
-  members.push({id:mlUid(),name,discord,rank:mlGetRanks(DEPT)[0],joined:new Date().toISOString(),promotions:[]});
-  mlSaveDeptMembers(DEPT,members);
-  mlLog(AREA,"Member imported from accepted application",name,`Discord: ${discord}`);
-  render();
+async function importApp(discord,name){
+  const members=await mlDeptMembers(DEPT);
+  const ranks=await mlGetRanks(DEPT);
+  members.push({id:mlUid(),name,discord,rank:ranks[0],joined:new Date().toISOString(),promotions:[]});
+  await mlSaveDeptMembers(DEPT,members);
+  await mlLog(AREA,"Member imported from accepted application",name,`Discord: ${discord}`);
+  await render();
 }
 
-function addManual(){
+async function addManual(){
   const name=document.getElementById("mName").value.trim();
   const discord=document.getElementById("mDiscord").value.trim();
   if(!name||!discord){alert("Name and Discord are required.");return}
-  const members=mlDeptMembers(DEPT);
-  members.push({id:mlUid(),name,discord,rank:mlGetRanks(DEPT)[0],joined:new Date().toISOString(),promotions:[]});
-  mlSaveDeptMembers(DEPT,members);
-  mlLog(AREA,"Member added manually",name,`Discord: ${discord}`);
+  const members=await mlDeptMembers(DEPT);
+  const ranks=await mlGetRanks(DEPT);
+  members.push({id:mlUid(),name,discord,rank:ranks[0],joined:new Date().toISOString(),promotions:[]});
+  await mlSaveDeptMembers(DEPT,members);
+  await mlLog(AREA,"Member added manually",name,`Discord: ${discord}`);
   document.getElementById("mName").value="";document.getElementById("mDiscord").value="";
-  render();
+  await render();
 }
 
-function syncFiveM(){
-  const members=mlDeptMembers(DEPT);
-  mlLog("Police","Roster synced to FiveM",`${members.length} member(s)`,"Simulated — a real deployment pushes this list to the FiveM server's ACE permissions / job grades.");
-  mlPushDiscordLog("staff-action","Police roster synced to FiveM",`${members.length} member(s) pushed (simulated)`);
+async function syncFiveM(){
+  const members=await mlDeptMembers(DEPT);
+  await mlLog("Police","Roster synced to FiveM",`${members.length} member(s)`,"Simulated — a real deployment pushes this list to the FiveM server's ACE permissions / job grades.");
+  await mlPushDiscordLog("staff-action","Police roster synced to FiveM",`${members.length} member(s) pushed (simulated)`);
   document.getElementById("syncStatus").textContent=`Last synced: ${mlFmt(new Date().toISOString())} — ${members.length} member(s).`;
 }
 
-function removeMember(i){
-  const members=mlDeptMembers(DEPT);
+async function removeMember(i){
+  const members=await mlDeptMembers(DEPT);
   const name=members[i].name;
   if(!confirm(`Remove ${name} from the roster?`))return;
   members.splice(i,1);
-  mlSaveDeptMembers(DEPT,members);
-  mlLog(AREA,"Member removed",name,"");
-  render();
+  await mlSaveDeptMembers(DEPT,members);
+  await mlLog(AREA,"Member removed",name,"");
+  await render();
 }
 </script>
 </body></html>

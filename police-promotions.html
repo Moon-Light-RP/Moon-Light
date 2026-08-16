@@ -85,7 +85,7 @@ const lock=document.getElementById("lock"), box=document.getElementById("box");
     if(await mlRoleGate(lock,box,"Police","Police Cmd")){
       lock.className="role-message granted";
       lock.innerHTML="Police Promotions access granted.";
-      render();
+      await render();
     }
   }catch(e){
     console.error("Error initializing police promotions:",e);
@@ -104,9 +104,9 @@ setTimeout(() => {
   }
 }, 10000); // 10 second timeout
 
-function render(){
-  const members=mlDeptMembers(DEPT);
-  const ranks=mlGetRanks(DEPT);
+async function render(){
+  const members=await mlDeptMembers(DEPT);
+  const ranks=await mlGetRanks(DEPT);
   document.getElementById("pMember").innerHTML=members.length?members.map((m,i)=>`<option value="${i}">${mlEsc(m.name)} — ${mlEsc(m.rank)}</option>`).join(""):`<option value="">No members</option>`;
   document.getElementById("pRank").innerHTML=ranks.map(r=>`<option>${mlEsc(r)}</option>`).join("");
 
@@ -118,8 +118,8 @@ function render(){
 
 const AREA=DEPT==="POLICE"?"Police":"EMS";
 
-function applyPromotion(){
-  const members=mlDeptMembers(DEPT);
+async function applyPromotion(){
+  const members=await mlDeptMembers(DEPT);
   const idx=Number(document.getElementById("pMember").value);
   if(isNaN(idx)||!members[idx]){alert("Select a member first.");return}
   const newRank=document.getElementById("pRank").value;
@@ -130,11 +130,11 @@ function applyPromotion(){
   m.promotions=m.promotions||[];
   m.promotions.push({date:new Date().toISOString(),from:m.rank,to:newRank,note});
   m.rank=newRank;
-  mlSaveDeptMembers(DEPT,members);
-  mlLog(AREA,`Rank change: ${fromRank} → ${newRank}`,m.name,note||"");
+  await mlSaveDeptMembers(DEPT,members);
+  await mlLog(AREA,`Rank change: ${fromRank} → ${newRank}`,m.name,note||"");
   document.getElementById("pNote").value="";
   const r=document.getElementById("result");r.style.display="block";r.textContent=`${m.name} is now ${newRank}.`;
-  render();
+  await render();
 }
 </script>
 </body></html>
