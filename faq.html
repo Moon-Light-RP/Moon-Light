@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FAQ | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"><style>
+.staff-panel-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.staff-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.staff-panel-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #f3f5fb;
+    margin: 0;
+}
+
+.staff-panel-subtitle {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.faq-card {
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.faq-card summary {
+    padding: 16px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    color: #f3f5fb;
+    transition: all 0.2s ease;
+}
+
+.faq-card summary:hover {
+    background: #1d2331;
+}
+
+.faq-card summary::-webkit-details-marker {
+    display: none;
+}
+
+.faq-card summary::after {
+    content: '+';
+    font-size: 20px;
+    color: #ef4444;
+    transition: transform 0.2s ease;
+}
+
+.faq-card[open] summary::after {
+    transform: rotate(45deg);
+}
+
+.faq-card p {
+    padding: 0 20px 20px;
+    color: #94a3b8;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.faq-answer {
+    padding: 0 20px 20px;
+    color: #94a3b8;
+    line-height: 1.6;
+}
+</style></head>
+<body class="ml-page">
+<header class="ml-nav">
+  <a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+  <nav class="ml-navlinks"><a href="index.html">Home</a><a href="index.html#departments">Departments</a><a href="rules.html">Rules</a><a href="faq.html">FAQ</a><a href="application.html">Application</a><a class="btn small" href="login.html">Login</a></nav>
+</header>
+<main class="ml-container">
+<div class="staff-panel-container">
+    <div class="staff-panel-header">
+        <div>
+            <h1 class="staff-panel-title">Frequently Asked Questions</h1>
+            <p class="staff-panel-subtitle">Find answers to common questions about MOON LIGHT RolePlay.</p>
+        </div>
+    </div>
+    <div id="faqList"></div>
+</div>
+</main>
+<footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/ml.js"></script>
+<script src="assets/portal.js"></script>
+<script>
+(async function loadFAQ(){
+  try{
+    const content=await mlGetContent();
+    const faq=content.faq||[];
+    const faqList=document.getElementById("faqList");
+    
+    if(!faq.length){
+      faqList.innerHTML=`<div class="faq-card" style="text-align:center;padding:20px;color:#94a3b8">No FAQ items available yet. Please check back later.</div>`;
+      return;
+    }
+    
+    faqList.innerHTML=faq.map(f=>`<details class="faq-card">
+        <summary>${mlEsc(f.q)}</summary>
+        <div class="faq-answer">${mlEsc(f.a)}</div>
+    </details>`).join("");
+  }catch(e){
+    console.error("Error loading FAQ:",e);
+    document.getElementById("faqList").innerHTML=`<div class="faq-card" style="text-align:center;padding:20px;color:#ef4444">Error loading FAQ. Please refresh the page.</div>`;
+  }
+})();
+
+loadFAQ();
+</script>
+</body>
+</html>

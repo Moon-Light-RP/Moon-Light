@@ -2,34 +2,147 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Server Rules | MOON LIGHT</title>
-<link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/responsive.css">
-</head>
-<body>
-<header class="nav">
-  <a class="brand" href="index.html"><span class="brand-mark">☾</span> MOON LIGHT</a>
-  <nav><a href="index.html">Home</a><a href="index.html#departments">Departments</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a class="btn small" href="login.html">Login</a></nav>
+<title>Server Rules | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"><style>
+.staff-panel-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.staff-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.staff-panel-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #f3f5fb;
+    margin: 0;
+}
+
+.staff-panel-subtitle {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.rule-card {
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: all 0.2s ease;
+}
+
+.rule-card:hover {
+    border-color: #dc2626;
+    transform: translateY(-2px);
+}
+
+.rule-number {
+    display: inline-block;
+    background: #7f1d1d;
+    color: #ef4444;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.rule-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #f3f5fb;
+    margin-bottom: 8px;
+}
+
+.rule-body {
+    color: #94a3b8;
+    line-height: 1.6;
+}
+
+.join-banner {
+    background: linear-gradient(135deg, #7f1d1d, #dc2626);
+    border-radius: 12px;
+    padding: 32px;
+    text-align: center;
+    margin-top: 40px;
+}
+
+.join-banner span {
+    display: block;
+    color: #f87171;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+.join-banner h2 {
+    color: #f3f5fb;
+    font-size: 24px;
+    margin: 8px 0;
+}
+
+.join-banner p {
+    color: #f3f5fb;
+    margin-bottom: 16px;
+}
+</style></head>
+<body class="ml-page">
+<header class="ml-nav">
+  <a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+  <nav class="ml-navlinks"><a href="index.html">Home</a><a href="index.html#departments">Departments</a><a href="rules.html">Rules</a><a href="faq.html">FAQ</a><a href="application.html">Application</a><a class="btn small" href="login.html">Login</a></nav>
 </header>
-<main class="form-page">
-  <div class="form-hero">
-    <span>MOON LIGHT SERVER RULES</span>
-    <h1>Know the rules.<br>Respect the story.</h1>
-    <p>Read these rules carefully before applying. The rules will also be reviewed during the interview process.</p>
-  </div>
-  <div class="rule-list" id="ruleList"></div>
-  <div class="join-banner" style="margin:50px 0 0">
-    <div><span>READY?</span><h2>Finished reading?</h2><p>Continue to the application and tell us about your character.</p></div>
-    <a class="btn" href="application.html">Start Application →</a>
-  </div>
+<main class="ml-container">
+<div class="staff-panel-container">
+    <div class="staff-panel-header">
+        <div>
+            <h1 class="staff-panel-title">Server Rules</h1>
+            <p class="staff-panel-subtitle">Read these rules carefully before applying. The rules will also be reviewed during the interview process.</p>
+        </div>
+    </div>
+    <div id="ruleList"></div>
+    <div class="join-banner">
+        <span>READY?</span>
+        <h2>Finished reading?</h2>
+        <p>Continue to the application and tell us about your character.</p>
+        <a class="btn" href="application.html">Start Application →</a>
+    </div>
+</div>
 </main>
-<footer><small>© 2026 MOON LIGHT RolePlay. All rights reserved.</small></footer>
+<footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
 <script src="assets/ml.js"></script>
 <script src="assets/portal.js"></script>
 <script>
-(function(){
-  const rules=mlGetContent().rules;
-  document.getElementById("ruleList").innerHTML=rules.map((r,i)=>`<div><b>${String(i+1).padStart(2,"0")}</b><div><h3>${mlEsc(r.title)}</h3><p>${mlEsc(r.body)}</p></div></div>`).join("");
+(async function loadRules(){
+  try{
+    const content=await mlGetContent();
+    const rules=content.rules||[];
+    const ruleList=document.getElementById("ruleList");
+    
+    if(!rules.length){
+      ruleList.innerHTML=`<div class="rule-card" style="text-align:center;color:#94a3b8">No rules available yet. Please check back later.</div>`;
+      return;
+    }
+    
+    ruleList.innerHTML=rules.map((r,i)=>`<div class="rule-card">
+        <span class="rule-number">${String(i+1).padStart(2,"0")}</span>
+        <h3 class="rule-title">${mlEsc(r.title)}</h3>
+        <p class="rule-body">${mlEsc(r.body)}</p>
+    </div>`).join("");
+  }catch(e){
+    console.error("Error loading rules:",e);
+    document.getElementById("ruleList").innerHTML=`<div class="rule-card" style="text-align:center;color:#ef4444">Error loading rules. Please refresh the page.</div>`;
+  }
 })();
+
+loadRules();
 </script>
 </body>
 </html>

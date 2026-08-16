@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Website Announcements | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"><style>
+.staff-panel-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.staff-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.staff-panel-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #f3f5fb;
+    margin: 0;
+}
+
+.staff-panel-subtitle {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.announcement-card {
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: all 0.2s ease;
+}
+
+.announcement-card:hover {
+    border-color: #dc2626;
+    transform: translateY(-2px);
+}
+
+.announcement-date {
+    color: #ef4444;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.announcement-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #f3f5fb;
+    margin-bottom: 8px;
+}
+
+.announcement-body {
+    color: #94a3b8;
+    line-height: 1.6;
+}
+</style></head>
+<body class="ml-page">
+<header class="ml-nav">
+  <a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+  <nav class="ml-navlinks"><a href="index.html">Home</a><a href="index.html#departments">Departments</a><a href="rules.html">Rules</a><a href="faq.html">FAQ</a><a href="application.html">Application</a><a class="btn small" href="login.html">Login</a></nav>
+</header>
+<main class="ml-container">
+<div class="staff-panel-container">
+    <div class="staff-panel-header">
+        <div>
+            <h1 class="staff-panel-title">Website Announcements</h1>
+            <p class="staff-panel-subtitle">Stay updated with the latest news and updates from MOON LIGHT.</p>
+        </div>
+    </div>
+    <div id="announcementList"></div>
+</div>
+</main>
+<footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/ml.js"></script>
+<script src="assets/portal.js"></script>
+<script>
+(async function loadAnnouncements(){
+  try{
+    const content=await mlGetContent();
+    const announcements=content.siteAnnouncements||[];
+    const announcementList=document.getElementById("announcementList");
+    
+    if(!announcements.length){
+      announcementList.innerHTML=`<div class="announcement-card" style="text-align:center;color:#94a3b8">No announcements available yet. Please check back later.</div>`;
+      return;
+    }
+    
+    announcementList.innerHTML=announcements.map(a=>`<div class="announcement-card">
+        <div class="announcement-date">${mlEsc(a.date||"No date")}</div>
+        <h3 class="announcement-title">${mlEsc(a.title)}</h3>
+        <p class="announcement-body">${mlEsc(a.body)}</p>
+    </div>`).join("");
+  }catch(e){
+    console.error("Error loading announcements:",e);
+    document.getElementById("announcementList").innerHTML=`<div class="announcement-card" style="text-align:center;color:#ef4444">Error loading announcements. Please refresh the page.</div>`;
+  }
+})();
+
+loadAnnouncements();
+</script>
+</body>
+</html>
