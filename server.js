@@ -389,6 +389,30 @@ app.post('/api/applications', requireDiscordUser, async (req, res) => {
   try {
     const discordId = req.session.discordUser.id;
     const discordUsername = req.session.discordUser.username;
+    const discordGlobalName = req.session.discordUser.global_name || discordUsername;
+    const discordAvatar = req.session.discordUser.avatar || null;
+    
+    // Ensure user exists in users table
+    try {
+      const existingUser = await supabaseRequest(`users?discord_id=eq.${discordId}&select=id`);
+      if (!existingUser || existingUser.length === 0) {
+        // Create user if doesn't exist
+        await supabaseRequest('users', {
+          method: 'POST',
+          body: JSON.stringify({
+            discord_id: discordId,
+            discord_username: discordUsername,
+            discord_global_name: discordGlobalName,
+            discord_avatar: discordAvatar,
+            role: 'Player'
+          })
+        });
+        console.log(`Created new user: ${discordUsername} (${discordId})`);
+      }
+    } catch (userError) {
+      console.error('Error checking/creating user:', userError);
+      // Continue anyway - the application might still work
+    }
     
     // Check for existing active applications
     const existingApps = await supabaseRequest(`applications?discord_id=eq.${discordId}&status=in.(pending,under_review,interview)&select=id,status,type,created_at`);
