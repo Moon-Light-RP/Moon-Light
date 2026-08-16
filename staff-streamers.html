@@ -39,7 +39,7 @@ function render(){
   document.getElementById("list").innerHTML=s.length?s.map((x,i)=>`<article class="ml-card">
     <div class="app-meta"><span class="ml-pill">${mlEsc(x.platform)}</span><span class="ml-status ${x.live?"accepted":"pending"}">${x.live?"live":"offline"}</span></div>
     <h3 style="margin-top:8px">${mlEsc(x.name)}</h3>
-    <p class="ml-muted"><a href="${mlEsc(x.url)}" target="_blank" style="color:#ff5a5a">${mlEsc(x.url)}</a></p>
+    <p class="ml-muted"><a href="${mlEsc(x.url)}" target="_blank" style="color:#ef4444">${mlEsc(x.url)}</a></p>
     <div class="ml-actions"><button class="ml-btn" onclick="toggleLive(${i})">${x.live?"Mark Offline":"Mark Live"}</button><button class="ml-btn danger" onclick="removeStreamer(${i})">Remove</button></div>
   </article>`).join(""):`<div class="ml-card" style="grid-column:1/-1">No streamers added yet.</div>`;
 }

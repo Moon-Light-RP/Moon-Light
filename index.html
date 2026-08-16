@@ -104,7 +104,7 @@
   document.getElementById("statPlayers").textContent=s.players;
   document.getElementById("statCapacity").textContent=s.maxPlayers;
   document.getElementById("statusLabel").textContent=s.online?"SERVER ONLINE":"SERVER OFFLINE";
-  document.getElementById("statusDot").style.background=s.online?"#4ade80":"#ff4d4d";
+  document.getElementById("statusDot").style.background=s.online?"#ef4444":"#dc2626";
 })();
 
 /* Streamers added via Staff Panel → Streamers render here automatically. */
@@ -113,7 +113,7 @@
   const box=document.getElementById("publicStreamerList");
   if(!s.length){box.innerHTML=`<p style="opacity:.7;grid-column:1/-1">No streamers listed yet.</p>`;return}
   box.innerHTML=s.map(x=>`<a href="${mlEsc(x.url)}" target="_blank" style="display:block;text-decoration:none;color:inherit;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:16px;background:rgba(255,255,255,.03)">
-    <div style="display:flex;justify-content:space-between;font-size:.8rem;opacity:.8"><span>${mlEsc(x.platform)}</span><span style="color:${x.live?"#4ade80":"#999"}">${x.live?"● live":"offline"}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:.8rem;opacity:.8"><span>${mlEsc(x.platform)}</span><span style="color:${x.live?"#ef4444":"#999"}">${x.live?"● live":"offline"}</span></div>
     <h3 style="margin-top:8px">${mlEsc(x.name)}</h3>
   </a>`).join("");
 })();

@@ -4,22 +4,22 @@
     </nav></header><main class="ml-container">
 <div class="ml-hero"><span class="ml-eyebrow">PLAYER PORTAL</span><h1 id="welcome">Welcome back, Player.</h1><p>Track your profile, applications, interviews, and account status from one place.</p></div>
 
-<div id="noProfile" class="ml-alert" style="display:none">You haven't linked a Discord username yet, so we're showing your most recent local submission. <a href="profile.html" style="color:#ff5a5a;text-decoration:underline">Set up your profile</a> to always see the right applications.</div>
+<div id="noProfile" class="ml-alert" style="display:none">You haven't linked a Discord username yet, so we're showing your most recent local submission. <a href="profile.html" style="color:#ef4444;text-decoration:underline">Set up your profile</a> to always see the right applications.</div>
 
 <section class="ml-grid">
- <article class="ml-card" style="border-color:#4b2020"><h3>My Profile</h3>
+ <article class="ml-card" style="border-color:#dc2626"><h3>My Profile</h3>
    <p><b id="pName">—</b></p>
    <p class="ml-muted" id="pDiscord">Discord: —</p>
    <p class="ml-muted" id="pSteam">Steam: —</p>
    <p class="ml-muted" id="pLinked">Discord account: not linked</p>
    <div class="ml-actions"><a class="ml-btn primary" href="profile.html">Edit Profile</a></div>
  </article>
- <article class="ml-card" style="border-color:#4b2020"><h3>Account Status</h3>
+ <article class="ml-card" style="border-color:#dc2626"><h3>Account Status</h3>
    <p id="acctStatus" style="font-weight:700">—</p>
    <p class="ml-muted" id="acctMember">Member since: —</p>
    <span class="ml-pill">Live Preview</span>
  </article>
- <article class="ml-card" style="border-color:#4b2020"><h3>Departments</h3>
+ <article class="ml-card" style="border-color:#dc2626"><h3>Departments</h3>
    <p id="acctDepts">No accepted department yet.</p>
    <span class="ml-pill">Progression</span>
  </article>
@@ -30,7 +30,7 @@
  <div id="appsGrid" class="ml-grid"></div>
 </section>
 
-<section class="ml-card" style="margin-top:20px;border-color:#4b2020"><h3>Notifications</h3><div id="notifications"></div></section>
+<section class="ml-card" style="margin-top:20px;border-color:#dc2626"><h3>Notifications</h3><div id="notifications"></div></section>
 
 </main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
 <script src="assets/portal.js"></script>
@@ -93,7 +93,7 @@ if(!myApps.length){
     }else{
       interviewHtml=`<p><b>Interview:</b> Not scheduled</p>`;
     }
-    return `<article class="ml-card" style="border-color:#4b2020">
+    return `<article class="ml-card" style="border-color:#dc2626">
       <div class="app-meta"><span class="ml-pill">${mlEsc(dept)}</span><span class="ml-status ${a.status||"pending"}">${mlEsc(a.status||"pending")}</span></div>
       <h3 style="margin-top:8px">${mlEsc(dept)} Application</h3>
       <p class="ml-muted">Submitted ${mlEsc(a.submitted||"—")}</p>

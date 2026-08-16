@@ -28,10 +28,10 @@
             padding: 10px;
             margin: 10px 0;
             border-radius: 4px;
-            border-left: 4px solid #7c3aed;
+            border-left: 4px solid #dc2626;
         }
         button {
-            background: #7c3aed;
+            background: #dc2626;
             color: #eef1fb;
             border: none;
             padding: 10px 20px;
@@ -40,7 +40,7 @@
             font-size: 16px;
         }
         button:hover {
-            background: #6d28d9;
+            background: #b91c1c;
         }
         #result {
             margin-top: 20px;
@@ -49,21 +49,42 @@
             display: none;
         }
         .success {
-            background: #0f2e1a;
-            color: #4ade80;
-            border: 1px solid #2d5a3d;
+            background: #7f1d1d;
+            color: #ef4444;
+            border: 1px solid #dc2626;
         }
         .error {
             background: #2b0a0a;
             color: #ff4d4d;
             border: 1px solid #5c1414;
         }
+        .role-message {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+        .role-message.granted {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid #dc2626;
+            color: #ef4444;
+        }
+        .role-message.denied {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #f87171;
+        }
+        .role-message.loading {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid #dc2626;
+            color: #dc2626;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Add Staff Members</h1>
-        <div id="lock" class="role-lock">Checking permission...</div>
+        <div id="lock" class="role-message loading">Checking permission...</div>
         <div id="box" style="display:none">
         
         <div class="user-info">
@@ -93,11 +114,11 @@
         const role = await mlRole();
         
         if (role === 'Management') {
-            lock.className = 'role-ok';
+            lock.className = 'role-message granted';
             lock.innerHTML = 'Management access granted.';
             box.style.display = 'block';
         } else {
-            lock.className = 'role-lock';
+            lock.className = 'role-message denied';
             lock.innerHTML = 'Access denied. This page requires Management role.';
             box.style.display = 'none';
         }
