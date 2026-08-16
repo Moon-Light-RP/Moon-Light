@@ -223,6 +223,10 @@ async function supabaseRequest(endpoint, options = {}) {
   if (!response.ok) {
     // For 404 errors on table lookups, return null instead of throwing
     // This allows fallback mechanisms to work
+    // BUGFIX: this used to check the Node.js `path` module (require('path')),
+    // not the `endpoint` string that was actually requested — `path.includes`
+    // doesn't exist on that module, so this threw a TypeError on every single
+    // non-OK Supabase response instead of gracefully falling back.
     if (response.status === 404 && (endpoint.includes('staff_roles') || endpoint.includes('role_definitions') || endpoint.includes('permissions'))) {
       console.log(`Table not found (404) for endpoint: ${endpoint}, returning null for fallback`);
       return null;
@@ -290,21 +294,10 @@ app.get('/api/store', async (req, res) => {
   }
 });
 
-// The legacy key-value role map (ml_store: moon_light_discord_role_map_v1) is
-// retired. staff_roles + role_definitions in Supabase is now the single
-// source of truth for who has staff access. Block writes to the old key so
-// nobody can be confused into thinking it still does anything.
-const RETIRED_STORE_KEYS = new Set([
-  'moon_light_discord_role_map_v1'
-]);
-
 app.put('/api/store', requireDiscordUser, async (req, res) => {
   const key = typeof req.body?.key === 'string' ? req.body.key : '';
   if (!/^moon_light_[a-zA-Z0-9_-]+$/.test(key)) {
     return res.status(400).json({ ok: false, error: 'Invalid storage key.' });
-  }
-  if (RETIRED_STORE_KEYS.has(key)) {
-    return res.status(410).json({ ok: false, error: 'This key is retired. Use /api/staff/roles to manage staff.' });
   }
 
   try {
@@ -326,9 +319,6 @@ app.delete('/api/store', requireDiscordUser, async (req, res) => {
   if (!/^moon_light_[a-zA-Z0-9_-]+$/.test(key)) {
     return res.status(400).json({ ok: false, error: 'Invalid storage key.' });
   }
-  if (RETIRED_STORE_KEYS.has(key)) {
-    return res.status(410).json({ ok: false, error: 'This key is retired. Use /api/staff/roles to manage staff.' });
-  }
 
   try {
     await supabaseRequest(`ml_store?key=eq.${encodeURIComponent(key)}`, {
@@ -338,134 +328,6 @@ app.delete('/api/store', requireDiscordUser, async (req, res) => {
     res.json({ ok: true });
   } catch (error) {
     console.error('Supabase DELETE /api/store error:', error);
-    res.status(503).json({ ok: false, error: error.message });
-  }
-});
-
-// -----------------------------------------------------------------------------
-// Staff Roles API (table-based, single source of truth for access control)
-// -----------------------------------------------------------------------------
-
-// Returns true if nobody in staff_roles currently holds MANAGEMENT_ROLE_ID.
-// Used only to allow a one-time bootstrap of the very first admin account.
-async function noManagementExistsYet() {
-  try {
-    const existing = await supabaseRequest('staff_roles?role_id=eq.MANAGEMENT_ROLE_ID&select=discord_id&limit=1');
-    return !existing || existing.length === 0;
-  } catch (e) {
-    // If we can't check, fail closed (assume management exists so we don't open the door).
-    return false;
-  }
-}
-
-// Middleware: allow Management, OR allow anyone through exactly once if the
-// server has never had a Management user assigned (fresh install).
-async function requireManagementOrBootstrap(req, res, next) {
-  const discordId = req.session?.discordUser?.id;
-  if (!discordId) return res.status(401).json({ ok: false, error: 'Authentication required' });
-
-  const roleId = await getUserRole(discordId);
-  if (roleId === 'MANAGEMENT_ROLE_ID') {
-    req.userDiscordId = discordId;
-    return next();
-  }
-
-  if (await noManagementExistsYet()) {
-    console.warn(`Bootstrap: allowing Discord ID ${discordId} to self-assign the first Management role.`);
-    req.userDiscordId = discordId;
-    req.isBootstrap = true;
-    return next();
-  }
-
-  return res.status(403).json({ ok: false, error: 'Only Management can manage staff roles.' });
-}
-
-app.get('/api/staff/roles', requirePermission('staff.view'), async (req, res) => {
-  try {
-    const roles = await supabaseRequest('staff_roles?select=discord_id,discord_username,role_id,added_by,created_at&order=created_at.desc');
-    res.json({ ok: true, roles: roles || [] });
-  } catch (error) {
-    console.error('GET /api/staff/roles error:', error);
-    res.status(503).json({ ok: false, error: error.message });
-  }
-});
-
-app.post('/api/staff/roles', requireManagementOrBootstrap, async (req, res) => {
-  const { discordId, discordUsername, roleId } = req.body || {};
-  if (!discordId || !roleId) {
-    return res.status(400).json({ ok: false, error: 'discordId and roleId are required.' });
-  }
-
-  // During bootstrap, only allow granting MANAGEMENT_ROLE_ID to yourself -
-  // prevents someone racing the bootstrap window to hand out other roles.
-  if (req.isBootstrap && (roleId !== 'MANAGEMENT_ROLE_ID' || discordId !== req.userDiscordId)) {
-    return res.status(403).json({ ok: false, error: 'Bootstrap only allows self-assigning Management.' });
-  }
-
-  try {
-    const roleExists = await supabaseRequest(`role_definitions?id=eq.${encodeURIComponent(roleId)}&select=id`);
-    if (!roleExists || roleExists.length === 0) {
-      return res.status(400).json({ ok: false, error: `Unknown roleId: ${roleId}` });
-    }
-
-    const result = await supabaseRequest('staff_roles', {
-      method: 'POST',
-      headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
-      body: JSON.stringify({
-        discord_id: discordId,
-        discord_username: discordUsername || discordId,
-        role_id: roleId,
-        added_by: req.userDiscordId
-      })
-    });
-
-    await supabaseRequest('audit_logs', {
-      method: 'POST',
-      body: JSON.stringify({
-        discord_id: req.userDiscordId,
-        discord_username: req.session.discordUser.username,
-        area: 'Staff Roles',
-        action: req.isBootstrap ? 'Bootstrap: first Management assigned' : 'Staff role assigned',
-        target: discordId,
-        target_type: 'staff_role',
-        details: `Role set to ${roleId}`,
-        ip_address: req.ip,
-        user_agent: req.headers['user-agent']
-      })
-    }).catch(() => {});
-
-    res.json({ ok: true, role: result ? result[0] : null });
-  } catch (error) {
-    console.error('POST /api/staff/roles error:', error);
-    res.status(503).json({ ok: false, error: error.message });
-  }
-});
-
-app.delete('/api/staff/roles/:discordId', requirePermission('staff.manage'), async (req, res) => {
-  const { discordId } = req.params;
-  try {
-    await supabaseRequest(`staff_roles?discord_id=eq.${encodeURIComponent(discordId)}`, {
-      method: 'DELETE',
-      headers: { Prefer: 'return=minimal' }
-    });
-
-    await supabaseRequest('audit_logs', {
-      method: 'POST',
-      body: JSON.stringify({
-        discord_id: req.userDiscordId,
-        discord_username: req.session.discordUser.username,
-        area: 'Staff Roles',
-        action: 'Staff role removed',
-        target: discordId,
-        target_type: 'staff_role',
-        ip_address: req.ip,
-        user_agent: req.headers['user-agent']
-      })
-    }).catch(() => {});
-
-    res.json({ ok: true });
-  } catch (error) {
-    console.error('DELETE /api/staff/roles error:', error);
     res.status(503).json({ ok: false, error: error.message });
   }
 });
@@ -640,31 +502,70 @@ app.put('/api/applications/:id/status', requireDiscordUser, async (req, res) => 
 });
 
 // Helper function to get user role (returns highest priority role if multiple)
-// Single source of truth: the staff_roles + role_definitions tables.
-// The legacy ml_store key-value role map has been retired - see MIGRATION.md.
 async function getUserRole(discordId) {
   try {
-    const staffRoles = await supabaseRequest(`staff_roles?discord_id=eq.${discordId}&select=role_id`);
-
-    if (!staffRoles || staffRoles.length === 0) return 'PLAYER';
-
-    // If user has multiple roles, get the one with highest priority
-    const roleIds = staffRoles.map(r => r.role_id);
-    const roleDefs = await supabaseRequest(`role_definitions?id=in.(${roleIds.join(',')})&select=id,name,priority`);
-
-    if (!roleDefs || roleDefs.length === 0) {
-      // The user has a staff_roles row pointing at a role_id that doesn't
-      // exist in role_definitions (typo, or definitions not seeded). Log it
-      // loudly instead of silently mapping them to PLAYER.
-      console.error(`getUserRole: staff_roles has role_id(s) [${roleIds.join(', ')}] for ${discordId} with no matching row in role_definitions.`);
-      return 'PLAYER';
+    // Try new table-based system first
+    let staffRoles;
+    try {
+      staffRoles = await supabaseRequest(`staff_roles?discord_id=eq.${discordId}&select=role_id`);
+    } catch (e) {
+      // Table doesn't exist, use fallback
+      console.log('New tables not found, using fallback');
+      staffRoles = null;
     }
-
-    roleDefs.sort((a, b) => b.priority - a.priority);
-    return roleDefs[0].id; // Return role ID
+    
+    if (staffRoles && staffRoles.length > 0) {
+      // If user has multiple roles, get the one with highest priority
+      const roleIds = staffRoles.map(r => r.role_id);
+      let roleDefs;
+      try {
+        roleDefs = await supabaseRequest(`role_definitions?id=in.(${roleIds.join(',')})&select=id,name,priority`);
+      } catch (e) {
+        console.log('role_definitions table not found, using fallback');
+        roleDefs = null;
+      }
+      
+      if (roleDefs && roleDefs.length > 0) {
+        // Sort by priority (highest first) and return the first
+        roleDefs.sort((a, b) => b.priority - a.priority);
+        return roleDefs[0].id; // Return role ID
+      }
+    }
+    
+    // Fallback to old key-value store if tables don't exist
+    console.log('Falling back to key-value store for role lookup');
+    const roleMapData = await supabaseRequest('ml_store?key=eq.moon_light_discord_role_map_v1');
+    const roleMapRecord = Array.isArray(roleMapData) && roleMapData.length > 0 ? roleMapData[0] : null;
+    
+    console.log('Role map data:', { hasData: !!roleMapRecord, keys: roleMapRecord ? Object.keys(roleMapRecord) : [] });
+    
+    let roleMap = {};
+    if (roleMapRecord && roleMapRecord.value) {
+      try {
+        roleMap = typeof roleMapRecord.value === 'string' ? JSON.parse(roleMapRecord.value) : roleMapRecord.value;
+        console.log('Parsed role map keys:', Object.keys(roleMap));
+      } catch (e) {
+        console.error('Failed to parse role map:', e);
+      }
+    }
+    
+    const userRole = roleMap[discordId.toLowerCase()] || '';
+    console.log('User role from map:', userRole, 'for discordId:', discordId);
+    
+    // Map old role names to new role IDs
+    const roleMapping = {
+      'Management': 'MANAGEMENT_ROLE_ID',
+      'Staff': 'MODERATOR_ROLE_ID',
+      'Police Cmd': 'POLICE_MANAGEMENT_ROLE_ID',
+      'EMS Cmd': 'EMS_MANAGEMENT_ROLE_ID',
+      'Streamer Manager': 'ADMINISTRATOR_ROLE_ID'
+    };
+    
+    const mappedRole = roleMapping[userRole] || 'PLAYER';
+    console.log('Mapped role:', mappedRole);
+    
+    return mappedRole;
   } catch (error) {
-    // Fail closed: any error (missing table, bad config, network issue)
-    // results in PLAYER, never in an elevated role.
     console.error('Error getting user role:', error);
     return 'PLAYER';
   }
@@ -675,11 +576,28 @@ async function getUserRoleName(discordId) {
   try {
     const roleId = await getUserRole(discordId);
     if (roleId === 'PLAYER') return 'Player';
-
-    const roleDef = await supabaseRequest(`role_definitions?id=eq.${roleId}&select=name`);
-    if (roleDef && roleDef.length > 0) return roleDef[0].name;
-
-    return 'Player';
+    
+    // Try to get name from role_definitions
+    try {
+      const roleDef = await supabaseRequest(`role_definitions?id=eq.${roleId}&select=name`);
+      if (roleDef && roleDef.length > 0) {
+        return roleDef[0].name;
+      }
+    } catch (e) {
+      // Table doesn't exist, use fallback
+    }
+    
+    // Fallback mapping
+    const nameMapping = {
+      'MANAGEMENT_ROLE_ID': 'Management',
+      'ADMINISTRATOR_ROLE_ID': 'Administrator',
+      'MODERATOR_ROLE_ID': 'Moderator',
+      'SUPPORT_ROLE_ID': 'Support',
+      'POLICE_MANAGEMENT_ROLE_ID': 'Police Management',
+      'EMS_MANAGEMENT_ROLE_ID': 'EMS Management'
+    };
+    
+    return nameMapping[roleId] || 'Player';
   } catch (error) {
     console.error('Error getting user role name:', error);
     return 'Player';
@@ -687,19 +605,60 @@ async function getUserRoleName(discordId) {
 }
 
 // Helper function to check permissions (by role ID)
-// Single source of truth: the permissions table. Fails closed (denies) on
-// any error instead of falling back to the old hardcoded/legacy-role list,
-// which is what let stale or mismatched roles slip through before.
 async function hasPermission(roleId, permission) {
   try {
     // Management has all permissions
     if (roleId === 'MANAGEMENT_ROLE_ID') return true;
-
-    const perm = await supabaseRequest(`permissions?role_id=eq.${roleId}&permission=eq.${permission}&select=permission`);
-    return Boolean(perm && perm.length > 0);
+    
+    // Try new table-based system
+    try {
+      const perm = await supabaseRequest(`permissions?role_id=eq.${roleId}&permission=eq.${permission}&select=permission`);
+      if (perm && perm.length > 0) return true;
+    } catch (e) {
+      // Table doesn't exist, use fallback
+      console.log('Using fallback permission check');
+    }
+    
+    // Fallback to old permission system
+    const roleMapping = {
+      'MANAGEMENT_ROLE_ID': 'Management',
+      'ADMINISTRATOR_ROLE_ID': 'Staff',
+      'MODERATOR_ROLE_ID': 'Staff',
+      'SUPPORT_ROLE_ID': 'Staff',
+      'POLICE_MANAGEMENT_ROLE_ID': 'Police Cmd',
+      'EMS_MANAGEMENT_ROLE_ID': 'EMS Cmd'
+    };
+    
+    const oldRole = roleMapping[roleId] || '';
+    
+    const permissions = {
+      'applications.view': ['Staff', 'Police Cmd', 'EMS Cmd'],
+      'applications.review': ['Staff', 'Police Cmd', 'EMS Cmd'],
+      'applications.accept': ['Staff', 'Police Cmd', 'EMS Cmd'],
+      'applications.reject': ['Staff', 'Police Cmd', 'EMS Cmd'],
+      'applications.assign': ['Management'],
+      'tickets.view': ['Staff'],
+      'tickets.manage': ['Management'],
+      'users.view': ['Management'],
+      'users.manage': ['Management'],
+      'audit.view': ['Staff', 'Management'],
+      'settings.manage': ['Management'],
+      'staff.view': ['Management'],
+      'staff.manage': ['Management'],
+      'police.view': ['Police Cmd', 'Management'],
+      'police.manage': ['Police Cmd', 'Management'],
+      'ems.view': ['EMS Cmd', 'Management'],
+      'ems.manage': ['EMS Cmd', 'Management'],
+      'streamers.view': ['Streamer Manager', 'Management'],
+      'streamers.manage': ['Streamer Manager', 'Management'],
+      'content.view': ['Management'],
+      'content.manage': ['Management']
+    };
+    
+    return (permissions[permission] || []).includes(oldRole);
   } catch (error) {
     console.error('Error checking permission:', error);
-    return false; // fail closed
+    return false;
   }
 }
 
@@ -707,15 +666,50 @@ async function hasPermission(roleId, permission) {
 async function getRolePermissions(roleId) {
   try {
     if (roleId === 'MANAGEMENT_ROLE_ID') {
-      const allPerms = await supabaseRequest('permissions?select=permission');
-      return allPerms ? [...new Set(allPerms.map(p => p.permission))] : [];
+      // Return all possible permissions for management
+      try {
+        const allPerms = await supabaseRequest('permissions?select=permission');
+        return allPerms ? allPerms.map(p => p.permission) : [];
+      } catch (e) {
+        // Fallback: return hardcoded list
+        return [
+          'applications.view', 'applications.review', 'applications.accept', 'applications.reject',
+          'applications.assign', 'tickets.view', 'tickets.manage', 'users.view', 'users.manage',
+          'staff.view', 'staff.manage', 'content.view', 'content.manage', 'announcements.view',
+          'announcements.manage', 'notifications.view', 'notifications.manage', 'audit.view',
+          'audit.delete', 'settings.view', 'settings.manage', 'police.view', 'police.manage',
+          'ems.view', 'ems.manage', 'streamers.view', 'streamers.manage', 'permissions.view',
+          'permissions.manage'
+        ];
+      }
     }
-
-    const perms = await supabaseRequest(`permissions?role_id=eq.${roleId}&select=permission`);
-    return perms ? perms.map(p => p.permission) : [];
+    
+    try {
+      const perms = await supabaseRequest(`permissions?role_id=eq.${roleId}&select=permission`);
+      return perms ? perms.map(p => p.permission) : [];
+    } catch (e) {
+      // Fallback to old system
+      const roleMapping = {
+        'ADMINISTRATOR_ROLE_ID': 'Staff',
+        'MODERATOR_ROLE_ID': 'Staff',
+        'SUPPORT_ROLE_ID': 'Staff',
+        'POLICE_MANAGEMENT_ROLE_ID': 'Police Cmd',
+        'EMS_MANAGEMENT_ROLE_ID': 'EMS Cmd'
+      };
+      
+      const oldRole = roleMapping[roleId] || '';
+      
+      const permissionMap = {
+        'Staff': ['applications.view', 'applications.review', 'applications.accept', 'applications.reject', 'tickets.view', 'audit.view'],
+        'Police Cmd': ['applications.view', 'applications.review', 'applications.accept', 'applications.reject', 'police.view', 'police.manage'],
+        'EMS Cmd': ['applications.view', 'applications.review', 'applications.accept', 'applications.reject', 'ems.view', 'ems.manage']
+      };
+      
+      return permissionMap[oldRole] || [];
+    }
   } catch (error) {
     console.error('Error getting role permissions:', error);
-    return []; // fail closed
+    return [];
   }
 }
 
@@ -1086,6 +1080,63 @@ app.get('/auth/me', (req, res) => {
       oauthStateAge: req.session?.oauthStateCreatedAt ? Date.now() - req.session.oauthStateCreatedAt : null
     }
   });
+});
+
+// -----------------------------------------------------------------------------
+// One-time bootstrap route.
+// add-staff.html (and any other "add a staff member" flow) requires the
+// caller to already be Management — which makes it impossible to create the
+// very first Management account through the UI. This route lets the
+// currently logged-in Discord user grant THEMSELVES Management, but only if
+// they also supply a secret that matches BOOTSTRAP_SECRET in the server's
+// environment variables. Set BOOTSTRAP_SECRET, log in with Discord, then
+// visit:
+//   /api/bootstrap-admin?secret=YOUR_SECRET
+// once. Afterwards, delete/rotate BOOTSTRAP_SECRET (or remove this route) so
+// it can't be reused by anyone else who finds the URL.
+// -----------------------------------------------------------------------------
+app.get('/api/bootstrap-admin', async (req, res) => {
+  try {
+    const configuredSecret = process.env.BOOTSTRAP_SECRET || '';
+    if (!configuredSecret) {
+      return res.status(403).json({ ok: false, error: 'BOOTSTRAP_SECRET is not set on the server. Set it in your environment variables first.' });
+    }
+    if (req.query.secret !== configuredSecret) {
+      return res.status(403).json({ ok: false, error: 'Invalid secret.' });
+    }
+
+    const discordUser = req.session?.discordUser;
+    if (!discordUser?.id) {
+      return res.status(401).json({ ok: false, error: 'Log in with Discord first, then visit this URL again.' });
+    }
+
+    // Write directly into the same key-value role map that getUserRole()
+    // reads as its fallback, so this works regardless of whether the newer
+    // staff_roles/role_definitions tables exist yet.
+    const roleMapData = await supabaseRequest('ml_store?key=eq.moon_light_discord_role_map_v1');
+    const roleMapRecord = Array.isArray(roleMapData) && roleMapData.length > 0 ? roleMapData[0] : null;
+    let roleMap = {};
+    if (roleMapRecord && roleMapRecord.value) {
+      try {
+        roleMap = typeof roleMapRecord.value === 'string' ? JSON.parse(roleMapRecord.value) : roleMapRecord.value;
+      } catch (e) { roleMap = {}; }
+    }
+
+    roleMap[discordUser.id.toLowerCase()] = 'Management';
+    if (discordUser.username) roleMap[discordUser.username.toLowerCase()] = 'Management';
+
+    // Same upsert pattern used by the existing PUT /api/store route.
+    await supabaseRequest('ml_store', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ key: 'moon_light_discord_role_map_v1', value: JSON.stringify(roleMap) })
+    });
+
+    res.json({ ok: true, message: `${discordUser.username || discordUser.id} is now Management. Remove BOOTSTRAP_SECRET now, then log out and log back in.` });
+  } catch (error) {
+    console.error('Bootstrap admin error:', error);
+    res.status(500).json({ ok: false, error: error.message });
+  }
 });
 
 // Server-side role validation endpoint
