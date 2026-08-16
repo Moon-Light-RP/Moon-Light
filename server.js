@@ -223,8 +223,8 @@ async function supabaseRequest(endpoint, options = {}) {
   if (!response.ok) {
     // For 404 errors on table lookups, return null instead of throwing
     // This allows fallback mechanisms to work
-    if (response.status === 404 && (path.includes('staff_roles') || path.includes('role_definitions') || path.includes('permissions'))) {
-      console.log(`Table not found (404) for path: ${path}, returning null for fallback`);
+    if (response.status === 404 && (endpoint.includes('staff_roles') || endpoint.includes('role_definitions') || endpoint.includes('permissions'))) {
+      console.log(`Table not found (404) for endpoint: ${endpoint}, returning null for fallback`);
       return null;
     }
     
@@ -290,11 +290,50 @@ app.get('/api/store', async (req, res) => {
   }
 });
 
+// Keys that control staff/role assignment. Writing to these must never be
+// open to any logged-in Discord user - it is the whole access-control system.
+const RESTRICTED_STORE_KEYS = new Set([
+  'moon_light_discord_role_map_v1'
+]);
+
+// Guards writes to RESTRICTED_STORE_KEYS. Only an existing Management user may
+// change them - EXCEPT there is a one-time "bootstrap" allowance: if the role
+// map does not yet contain a single Management entry (fresh install / nobody
+// has ever been granted access), the first authenticated user is allowed to
+// set it up. After that, this endpoint locks down automatically.
+async function guardRestrictedStoreKey(req, res, key) {
+  if (!RESTRICTED_STORE_KEYS.has(key)) return true; // not a restricted key
+
+  const discordId = req.session?.discordUser?.id;
+  const roleId = await getUserRole(discordId);
+  if (roleId === 'MANAGEMENT_ROLE_ID') return true; // already Management
+
+  try {
+    const roleMapData = await supabaseRequest('ml_store?key=eq.moon_light_discord_role_map_v1');
+    const record = Array.isArray(roleMapData) && roleMapData.length > 0 ? roleMapData[0] : null;
+    const roleMap = record?.value
+      ? (typeof record.value === 'string' ? JSON.parse(record.value) : record.value)
+      : {};
+    const hasAnyManagement = Object.values(roleMap).includes('Management');
+    if (!hasAnyManagement) {
+      console.warn(`Bootstrap: granting first-time role-map write to Discord ID ${discordId} (no Management exists yet).`);
+      return true; // bootstrap allowed once
+    }
+  } catch (e) {
+    // If we can't verify, fail closed (deny) rather than open.
+  }
+
+  res.status(403).json({ ok: false, error: 'Only Management can modify staff roles.' });
+  return false;
+}
+
 app.put('/api/store', requireDiscordUser, async (req, res) => {
   const key = typeof req.body?.key === 'string' ? req.body.key : '';
   if (!/^moon_light_[a-zA-Z0-9_-]+$/.test(key)) {
     return res.status(400).json({ ok: false, error: 'Invalid storage key.' });
   }
+
+  if (!(await guardRestrictedStoreKey(req, res, key))) return;
 
   try {
     const value = normalizeStoredValue(req.body?.value ?? null);
@@ -303,6 +342,23 @@ app.put('/api/store', requireDiscordUser, async (req, res) => {
       headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
       body: JSON.stringify({ key, value })
     });
+
+    if (RESTRICTED_STORE_KEYS.has(key)) {
+      await supabaseRequest('audit_logs', {
+        method: 'POST',
+        body: JSON.stringify({
+          discord_id: req.session.discordUser.id,
+          discord_username: req.session.discordUser.username,
+          area: 'Staff Roles',
+          action: 'Role map updated',
+          target: key,
+          target_type: 'store',
+          ip_address: req.ip,
+          user_agent: req.headers['user-agent']
+        })
+      }).catch(() => {});
+    }
+
     res.json({ ok: true });
   } catch (error) {
     console.error('Supabase PUT /api/store error:', error);
@@ -315,6 +371,8 @@ app.delete('/api/store', requireDiscordUser, async (req, res) => {
   if (!/^moon_light_[a-zA-Z0-9_-]+$/.test(key)) {
     return res.status(400).json({ ok: false, error: 'Invalid storage key.' });
   }
+
+  if (!(await guardRestrictedStoreKey(req, res, key))) return;
 
   try {
     await supabaseRequest(`ml_store?key=eq.${encodeURIComponent(key)}`, {
