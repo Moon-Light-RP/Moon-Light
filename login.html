@@ -217,59 +217,19 @@
 </div>
 </main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer><script src="assets/portal.js"></script>
 <script>
-let authBase="";
 const params=new URLSearchParams(window.location.search);
 const isSuccess=params.get("discord")==="success";
 
-document.getElementById("discordAuthLink").href="#";
-
-function setAuthLink(base){document.getElementById("discordAuthLink").href=`${base}/auth/discord`;}
+document.getElementById("discordAuthLink").href="/auth/discord";
 
 // Add click handler to Discord button
 document.getElementById("discordAuthLink").addEventListener("click", async function(e) {
   e.preventDefault();
   console.log("Discord button clicked");
   
-  if(!authBase) {
-    console.log("Resolving auth base...");
-    await resolveAuthBase();
-  }
-  
-  console.log("Auth base:", authBase);
-  
-  if(authBase) {
-    window.location.href = `${authBase}/auth/discord`;
-  } else {
-    // Fallback to current origin
-    console.log("Using current origin as fallback");
-    window.location.href = `/auth/discord`;
-  }
+  // Direct redirect to Discord OAuth
+  window.location.href = `/auth/discord`;
 });
-
-async function resolveAuthBase(){
-  // Try different base URLs depending on environment
-  const candidates = [
-    "", // Current origin
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001", 
-    "http://localhost:3000",
-    "http://localhost:3001"
-  ];
-  
-  for(const base of candidates){
-    try{
-      const url = base ? `${base}/api/status` : '/api/status';
-      const response=await fetch(url);
-      if(response.ok){
-        const data=await response.json();
-        if(data.ok){authBase=base;setAuthLink(authBase);return authBase;}
-      }
-    }catch(e){}
-  }
-  
-  // Fallback to current origin
-  authBase="";setAuthLink(authBase);return authBase;
-}
 
 async function refresh(){
   try{
@@ -310,8 +270,7 @@ async function refresh(){
 async function syncDiscordSession(){
   const status=document.getElementById("discordStatus");
   try{
-    await resolveAuthBase();
-    const [meResponse,statusResponse]=await Promise.all([fetch(`${authBase}/auth/me`),fetch(`${authBase}/api/status`)]);
+    const [meResponse,statusResponse]=await Promise.all([fetch(`/auth/me`),fetch(`/api/status`)]);
     const data=await meResponse.json();
     const service=await statusResponse.json();
     if(data.authenticated && data.user){
@@ -344,7 +303,7 @@ async function syncDiscordSession(){
 })();
 
 async function doLogout(){
-  try{await fetch(`${authBase}/auth/logout`);}catch(error){}
+  try{await fetch(`/auth/logout`);}catch(error){}
   await mlClearIdentity();
   await refresh();
 }

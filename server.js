@@ -23,6 +23,12 @@ const SESSION_MAX_AGE = 7 * 24 * 60 * 60;
 
 function sessionKey() {
   const secret = process.env.SESSION_SECRET || (!process.env.VERCEL ? 'moon-light-local-dev-session-secret-change-me-1234567890' : '');
+  console.log('SESSION_SECRET check:', {
+    hasSecret: !!secret,
+    secretLength: secret.length,
+    isVercel: !!process.env.VERCEL,
+    secretPreview: secret ? secret.substring(0, 10) + '...' : 'none'
+  });
   if (!secret || secret.length < 32) {
     throw new Error('SESSION_SECRET must be at least 32 characters long.');
   }
