@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Staff Members</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #070910;
+            color: #eef1fb;
+        }
+        .container {
+            background: #0c101b;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            border: 1px solid #1e293b;
+        }
+        h1 {
+            color: #eef1fb;
+        }
+        .user-info {
+            background: #0a0e14;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #7c3aed;
+        }
+        button {
+            background: #7c3aed;
+            color: #eef1fb;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #6d28d9;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background: #0f2e1a;
+            color: #4ade80;
+            border: 1px solid #2d5a3d;
+        }
+        .error {
+            background: #2b0a0a;
+            color: #ff4d4d;
+            border: 1px solid #5c1414;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Add Staff Members</h1>
+        <div id="lock" class="role-lock">Checking permission...</div>
+        <div id="box" style="display:none">
+        
+        <div class="user-info">
+            <strong>Ali Elnady</strong><br>
+            ID: 558939870618189834<br>
+            Role: Management
+        </div>
+        
+        <div class="user-info">
+            <strong>XRD</strong><br>
+            ID: 336665468888678400<br>
+            Role: Management
+        </div>
+        
+        <button onclick="addStaffMembers()">Add Staff Members</button>
+        
+        <div id="result"></div>
+        </div>
+    </div>
+
+    <script src="assets/portal.js"></script>
+    <script>
+    // Check Management permission
+    async function checkPermission() {
+        const lock = document.getElementById('lock');
+        const box = document.getElementById('box');
+        const role = await mlRole();
+        
+        if (role === 'Management') {
+            lock.className = 'role-ok';
+            lock.innerHTML = 'Management access granted.';
+            box.style.display = 'block';
+        } else {
+            lock.className = 'role-lock';
+            lock.innerHTML = 'Access denied. This page requires Management role.';
+            box.style.display = 'none';
+        }
+    }
+    
+    checkPermission();
+    </script>
+    <script src="assets/ml.js"></script>
+    <script>
+    async function addStaffMembers() {
+        const resultDiv = document.getElementById('result');
+        resultDiv.style.display = 'block';
+        resultDiv.className = '';
+        resultDiv.textContent = 'Adding staff members...';
+            
+            const usersToAdd = [
+                { id: '558939870618189834', name: 'Ali Elnady', role: 'Management' },
+                { id: '336665468888678400', name: 'XRD', role: 'Management' }
+            ];
+
+            try {
+                // Get current role map
+                const response = await fetch('/api/store');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch current role map');
+                }
+                
+                const data = await response.json();
+                if (!data.ok) {
+                    throw new Error('API response not ok');
+                }
+                
+                // Find existing role map
+                const roleMapRecord = data.items.find(item => item.key === 'moon_light_discord_role_map_v1');
+                let roleMap = {};
+                
+                if (roleMapRecord) {
+                    try {
+                        roleMap = typeof roleMapRecord.value === 'string' 
+                            ? JSON.parse(roleMapRecord.value) 
+                            : roleMapRecord.value;
+                    } catch (e) {
+                        console.error('Failed to parse existing role map:', e);
+                    }
+                }
+                
+                // Add new users
+                usersToAdd.forEach(user => {
+                    roleMap[user.id] = user.role;
+                    roleMap[user.name.toLowerCase()] = user.role;
+                    console.log(`Added ${user.name} (ID: ${user.id}) as ${user.role}`);
+                });
+                
+                // Save updated role map
+                const saveResponse = await fetch('/api/store', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        key: 'moon_light_discord_role_map_v1',
+                        value: roleMap
+                    })
+                });
+                
+                if (saveResponse.ok) {
+                    const saveData = await saveResponse.json();
+                    if (saveData.ok) {
+                        resultDiv.className = 'success';
+                        resultDiv.textContent = '✅ Staff members added successfully!';
+                        console.log('Updated role map:', roleMap);
+                    } else {
+                        throw new Error('Failed to save role map: ' + saveData.error);
+                    }
+                } else {
+                    throw new Error('Failed to save role map - server error');
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'error';
+                resultDiv.textContent = '❌ Error: ' + error.message;
+                console.error('Error adding staff members:', error);
+            }
+    }
+    </script>
+</body>
+</html>

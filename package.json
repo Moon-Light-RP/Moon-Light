@@ -1,0 +1,17 @@
+{
+  "name": "moon-light-website",
+  "version": "1.0.0",
+  "description": "MOON LIGHT static website with Discord OAuth integration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.2",
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "commonjs"
+}

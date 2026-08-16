@@ -1,0 +1,19 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Notifications | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+    <nav class="ml-navlinks">
+    <a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html" class="">My Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a>
+    </nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">NOTIFICATIONS</span><h1>Notifications</h1><p>Application, interview, and staff updates will appear here.</p></div>
+<div class="ml-card"><div id="notifList"></div></div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/ml.js"></script>
+<script src="assets/portal.js"></script>
+<script>
+let profile={};try{profile=JSON.parse(localStorage.getItem("moon_light_profile_v1")||"{}")}catch(e){}
+const myDiscord=(profile.discordUser||"").trim().toLowerCase();
+const all=mlGetApps();
+const list=myDiscord?mlNotifsFor(myDiscord):(all.length?mlNotifsFor(all[all.length-1].discord):mlGetNotifs().filter(n=>n.toDiscord===null));
+const box=document.getElementById("notifList");
+box.innerHTML=list.length?list.map(n=>`<div class="ml-alert"><span class="ml-pill">${mlEsc(n.type)}</span><br><b>${mlEsc(n.title)}</b><br>${mlEsc(n.body)}<br><span class="ml-muted">${mlFmt(n.date)}</span></div>`).join(""):`<div class="ml-alert">No notifications yet. Submit an application or check back after staff review your case.</div>`;
+</script>
+</body>
+</html>

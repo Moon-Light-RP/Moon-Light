@@ -1,0 +1,235 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Staff Panel | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"><style>
+.staff-panel-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.staff-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.staff-panel-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #f3f5fb;
+    margin: 0;
+}
+
+.staff-panel-subtitle {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.staff-card {
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 16px;
+    padding: 24px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+    position: relative;
+    overflow: hidden;
+}
+
+.staff-card:hover {
+    border-color: #3b82f6;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+}
+
+.staff-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.staff-card:hover::before {
+    opacity: 1;
+}
+
+.staff-card-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #1e3a5f, #2563eb);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    font-size: 24px;
+}
+
+.staff-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #f3f5fb;
+    margin: 0 0 8px 0;
+}
+
+.staff-card-description {
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.staff-card-arrow {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: #64748b;
+    font-size: 20px;
+    transition: color 0.3s ease;
+}
+
+.staff-card:hover .staff-card-arrow {
+    color: #3b82f6;
+}
+
+.staff-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.role-message {
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    font-size: 14px;
+}
+
+.role-message.granted {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid #10b981;
+    color: #34d399;
+}
+
+.role-message.denied {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    color: #f87171;
+}
+
+.role-message.loading {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid #3b82f6;
+    color: #60a5fa;
+}
+
+@media (max-width: 768px) {
+    .staff-panel-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .staff-panel-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
+</style></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a><nav class="ml-navlinks"><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html">Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a></nav></header><main class="ml-container">
+<div class="staff-panel-container">
+    <div class="staff-panel-header">
+        <div>
+            <h1 class="staff-panel-title">Staff Panel</h1>
+            <p class="staff-panel-subtitle">Everything below is scoped to your permission level automatically.</p>
+        </div>
+    </div>
+    
+    <div id="lock" class="role-message loading">Checking permission...</div>
+    <div id="box" style="display:none" class="staff-panel-grid"></div>
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer><script src="assets/portal.js"></script>
+<script>
+const lock=document.getElementById("lock"), box=document.getElementById("box");
+
+const CARDS=[
+ {area:"Applications",href:"staff-applications.html",title:"Applications",desc:"Search and review Civilian, Police, and EMS applications.",icon:"📋"},
+ {area:"Applications",href:"interview-queue.html",title:"Interview Queue",desc:"Schedule and run interviews across departments.",icon:"🎯"},
+ {area:"Applications",href:"tickets.html",title:"Tickets",desc:"Application tickets, mirroring Discord ticket channels.",icon:"🎫"},
+ {area:"Police",href:"police-portal.html",title:"Police Portal",desc:"Roster, ranks, promotions, and announcements.",icon:"👮"},
+ {area:"EMS",href:"ems-portal.html",title:"EMS Portal",desc:"Roster, ranks, promotions, and announcements.",icon:"🚑"},
+ {area:"Streamers",href:"staff-streamers.html",title:"Streamers",desc:"Manage streamers shown live on the homepage.",icon:"📺"},
+ {area:"Settings",href:"settings.html",title:"Settings",desc:"Staff identity and FiveM server status.",icon:"⚙️"},
+ {area:"Settings",href:"staff-directory.html",title:"Staff Directory",desc:"Discord ID → Role mapping for auto role detection.",icon:"👥"},
+ {area:"Settings",href:"content-management.html",title:"Content Management",desc:"Edit Rules, FAQ, and website announcements.",icon:"📝"},
+ {area:"Management",href:"add-staff.html",title:"Add Staff",desc:"Add new staff members to the Staff Directory.",icon:"➕"}
+];
+
+async function initStaffPanel(){
+  try{
+    console.log("Initializing staff panel...");
+    const roleLabel=await mlRole();
+    console.log("Got role label:", roleLabel);
+    const roleName=await mlGetRoleName();
+    console.log("Got role name:", roleName);
+    
+    // Ensure roleName is a string
+    const displayRoleName = typeof roleName === 'string' ? roleName : 'Player';
+    
+    if(!roleLabel || roleLabel==='PLAYER'){
+      lock.className="role-message denied";
+      lock.innerHTML="Access denied. You need a staff role to access this panel.";
+      box.style.display="none";
+      return;
+    }
+    
+    lock.className="role-message granted";
+    lock.innerHTML=`Staff Panel Access Granted. Your role: ${displayRoleName}`;
+
+    const visible=[];
+    for(const c of CARDS){
+      try{
+        console.log("Checking permission for:", c.area);
+        const hasPerm=await mlHasPerm(c.area);
+        console.log("Permission result for", c.area, ":", hasPerm);
+        if(hasPerm) visible.push(c);
+      }catch(e){
+        console.error("Error checking permission for",c.area,e);
+      }
+    }
+    
+    box.style.display="grid";
+    box.innerHTML=visible.length?visible.map(c=>`
+        <a class="staff-card" href="${c.href}">
+            <div class="staff-card-icon">${c.icon}</div>
+            <span class="staff-card-arrow">→</span>
+            <h3 class="staff-card-title">${c.title}</h3>
+            <p class="staff-card-description">${c.desc}</p>
+        </a>
+    `).join(""):`<div class="staff-card" style="grid-column:1/-1;cursor:default"><h3 class="staff-card-title">No Access</h3><p class="staff-card-description">Your role has no Staff Panel access.</p></div>`;
+    console.log("Staff panel initialized successfully");
+  }catch(e){
+    console.error("Error initializing staff panel:",e);
+    lock.className="role-message denied";
+    lock.innerHTML="Error loading staff panel: " + e.message + ". Please refresh the page.";
+    box.style.display="none";
+  }
+}
+
+// Add timeout to detect hanging
+setTimeout(() => {
+  if(lock.textContent === "Checking permission..."){
+    console.error("Staff panel initialization timed out");
+    lock.className="role-message denied";
+    lock.innerHTML="Staff panel loading timed out. Please refresh the page.";
+  }
+}, 10000); // 10 second timeout
+
+initStaffPanel();
+</script>
+</body></html>

@@ -1,0 +1,26 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Profile & Settings | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+    <nav class="ml-navlinks">
+    <a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html" class="">My Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a>
+    </nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">ACCOUNT</span><h1>Profile & Settings</h1><p>Manage the information shown to your MOON LIGHT account.</p></div>
+<div class="ml-card">
+<h3>Linked Discord Account</h3>
+<p id="linkStatus" class="ml-muted">Checking...</p>
+<div class="ml-actions"><a class="ml-btn" href="login.html">Manage Discord Link →</a></div>
+</div>
+<form class="ml-form" onsubmit="saveProfile(event)" style="margin-top:16px">
+<label>Display Name<input id="displayName" required placeholder="Your name"></label>
+<label>Discord Username<input id="discordUser" placeholder="username"></label>
+<label>Steam Profile<input id="steamProfile" type="url" placeholder="https://steamcommunity.com/id/..."></label>
+<label>Notification preference<select id="notify"><option>All notifications</option><option>Application updates only</option><option>None</option></select></label>
+<button class="ml-btn primary" type="submit">Save Changes</button><div id="saved" class="ml-alert" style="display:none">Settings saved locally.</div>
+</form>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer><script src="assets/portal.js"></script>
+<script>
+const K="moon_light_profile_v1";let p=JSON.parse(localStorage.getItem(K)||"{}");["displayName","discordUser","steamProfile","notify"].forEach(k=>{if(p[k])document.getElementById(k).value=p[k]});function saveProfile(e){e.preventDefault();let p={};["displayName","discordUser","steamProfile","notify"].forEach(k=>p[k]=document.getElementById(k).value);localStorage.setItem(K,JSON.stringify(p));document.getElementById("saved").style.display="block"}
+const identity=mlGetIdentity();
+document.getElementById("linkStatus").textContent=identity?`Linked to Discord as ${identity.username}${identity.discordId?` (ID: ${identity.discordId})`:""}. Detected role: ${mlRole()||"Player"}.`:"No Discord account linked yet.";
+</script>
+<script src="assets/ml.js"></script>
+</body>
+</html>

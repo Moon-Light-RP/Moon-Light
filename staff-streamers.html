@@ -1,0 +1,63 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Streamer Management | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a><nav class="ml-navlinks"><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html">Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a></nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">STREAMER MANAGER</span><h1>Streamer Management</h1><p>Streamers added here appear automatically on the homepage — one shared list, no per-page duplication.</p></div>
+<div id="lock" class="role-lock">Checking permission...</div>
+<div id="box" style="display:none;margin-top:16px">
+<div class="ml-card ml-form">
+<h3>Add Streamer</h3>
+<div class="form-grid">
+<div class="form-group">
+<label for="sName">Name</label>
+<input id="sName" placeholder="Streamer name">
+</div>
+<div class="form-group">
+<label for="sPlatform">Platform</label>
+<select id="sPlatform"><option>Twitch</option><option>YouTube</option><option>Kick</option></select>
+</div>
+<div class="form-group full">
+<label for="sUrl">Channel URL</label>
+<input id="sUrl" type="url" placeholder="https://twitch.tv/...">
+</div>
+<div class="form-group">
+<label for="sLive">Status</label>
+<select id="sLive"><option value="false">Offline</option><option value="true">Live</option></select>
+</div>
+</div>
+<div class="modal-actions" style="margin-top:10px">
+<button class="ml-btn primary" onclick="addStreamer()">Add Streamer</button>
+</div>
+</div>
+<div id="list" class="ml-grid" style="margin-top:16px"></div>
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/portal.js"></script>
+<script>
+const lock=document.getElementById("lock"), box=document.getElementById("box");
+if(mlRoleGate(lock,box,"Streamers","Streamer Manager")) render();
+
+function render(){
+  const s=mlGetStreamers();
+  document.getElementById("list").innerHTML=s.length?s.map((x,i)=>`<article class="ml-card">
+    <div class="app-meta"><span class="ml-pill">${mlEsc(x.platform)}</span><span class="ml-status ${x.live?"accepted":"pending"}">${x.live?"live":"offline"}</span></div>
+    <h3 style="margin-top:8px">${mlEsc(x.name)}</h3>
+    <p class="ml-muted"><a href="${mlEsc(x.url)}" target="_blank" style="color:#ff5a5a">${mlEsc(x.url)}</a></p>
+    <div class="ml-actions"><button class="ml-btn" onclick="toggleLive(${i})">${x.live?"Mark Offline":"Mark Live"}</button><button class="ml-btn danger" onclick="removeStreamer(${i})">Remove</button></div>
+  </article>`).join(""):`<div class="ml-card" style="grid-column:1/-1">No streamers added yet.</div>`;
+}
+
+function addStreamer(){
+  const name=document.getElementById("sName").value.trim();
+  const platform=document.getElementById("sPlatform").value;
+  const url=document.getElementById("sUrl").value.trim();
+  const live=document.getElementById("sLive").value==="true";
+  if(!name||!url){alert("Name and channel URL are required.");return}
+  const s=mlGetStreamers();
+  s.push({id:mlUid(),name,platform,url,live});
+  mlSaveStreamers(s);
+  mlLog("Streamers","Streamer added",name,`${platform} — ${url}`);
+  document.getElementById("sName").value="";document.getElementById("sUrl").value="";
+  render();
+}
+function toggleLive(i){const s=mlGetStreamers();s[i].live=!s[i].live;mlSaveStreamers(s);mlLog("Streamers",`Streamer marked ${s[i].live?"live":"offline"}`,s[i].name,"");render()}
+function removeStreamer(i){const s=mlGetStreamers();const r=s.splice(i,1)[0];mlSaveStreamers(s);mlLog("Streamers","Streamer removed",r?.name||"","");render()}
+</script>
+</body></html>

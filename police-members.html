@@ -1,0 +1,85 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Police Members | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+    <nav class="ml-navlinks">
+    <a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html" class="">My Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a>
+    </nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">POLICE / MEMBERS</span><h1>Police Members</h1><p>Current department roster. Newly accepted applicants can be imported below.</p></div>
+<div id="lock" class="role-lock">Checking staff permissions...</div>
+<div id="box" style="display:none;margin-top:16px">
+<div class="ml-card">
+<h3>Import Accepted Applicants</h3>
+<p class="ml-muted">Applicants with an accepted Police application who are not yet on the roster.</p>
+<div id="importList" class="ml-grid" style="margin-top:10px"></div>
+</div>
+<div class="ml-card" style="margin-top:16px">
+<h3>Add Member Manually</h3>
+<div class="ml-grid">
+<label>Name<input id="mName" placeholder="Character name"></label>
+<label>Discord<input id="mDiscord" placeholder="username"></label>
+</div>
+<button class="ml-btn primary" style="margin-top:10px" onclick="addManual()">Add Member</button>
+</div>
+<div class="ml-card" style="margin-top:16px"><h3>Roster</h3>
+<p class="ml-muted" id="syncStatus">Not yet synced to FiveM.</p>
+<button class="ml-btn" onclick="syncFiveM()">Sync Roster to FiveM</button>
+<table class="ml-table" style="margin-top:10px"><tbody id="rosterBody"><tr><th>Name</th><th>Discord</th><th>Rank</th><th>Joined</th><th></th></tr></tbody></table>
+</div>
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/portal.js"></script>
+<script>
+const DEPT="POLICE";
+const lock=document.getElementById("lock"), box=document.getElementById("box");
+if(mlRoleGate(lock,box,"Police","Police Cmd")) render();
+
+function render(){
+  const members=mlDeptMembers(DEPT);
+  const apps=mlGetApps().filter(a=>a.type===DEPT&&a.status==="accepted");
+  const notImported=apps.filter(a=>!members.some(m=>m.discord===a.discord));
+  document.getElementById("importList").innerHTML=notImported.length?notImported.map(a=>`<article class="ml-card"><h3>${mlEsc(a.characterName)}</h3><p class="ml-muted">${mlEsc(a.discord)}</p><button class="ml-btn primary" onclick="importApp('${mlEsc(a.discord).replace(/'/g,"\\'")}','${mlEsc(a.characterName).replace(/'/g,"\\'")}')">Add to Roster</button></article>`).join(""):`<div class="ml-muted">No pending accepted applicants to import.</div>`;
+
+  const ranks=mlGetRanks(DEPT);
+  document.getElementById("rosterBody").innerHTML=`<tr><th>Name</th><th>Discord</th><th>Rank</th><th>Joined</th><th></th></tr>`+
+    (members.length?members.map((m,i)=>`<tr><td>${mlEsc(m.name)}</td><td>${mlEsc(m.discord)}</td><td><span class="ml-pill">${mlEsc(m.rank)}</span></td><td>${mlFmt(m.joined)}</td><td><button class="ml-btn danger" onclick="removeMember(${i})">Remove</button></td></tr>`).join(""):`<tr><td colspan="5">No members yet.</td></tr>`);
+}
+
+const AREA=DEPT==="POLICE"?"Police":"EMS";
+
+function importApp(discord,name){
+  const members=mlDeptMembers(DEPT);
+  members.push({id:mlUid(),name,discord,rank:mlGetRanks(DEPT)[0],joined:new Date().toISOString(),promotions:[]});
+  mlSaveDeptMembers(DEPT,members);
+  mlLog(AREA,"Member imported from accepted application",name,`Discord: ${discord}`);
+  render();
+}
+
+function addManual(){
+  const name=document.getElementById("mName").value.trim();
+  const discord=document.getElementById("mDiscord").value.trim();
+  if(!name||!discord){alert("Name and Discord are required.");return}
+  const members=mlDeptMembers(DEPT);
+  members.push({id:mlUid(),name,discord,rank:mlGetRanks(DEPT)[0],joined:new Date().toISOString(),promotions:[]});
+  mlSaveDeptMembers(DEPT,members);
+  mlLog(AREA,"Member added manually",name,`Discord: ${discord}`);
+  document.getElementById("mName").value="";document.getElementById("mDiscord").value="";
+  render();
+}
+
+function syncFiveM(){
+  const members=mlDeptMembers(DEPT);
+  mlLog("Police","Roster synced to FiveM",`${members.length} member(s)`,"Simulated — a real deployment pushes this list to the FiveM server's ACE permissions / job grades.");
+  mlPushDiscordLog("staff-action","Police roster synced to FiveM",`${members.length} member(s) pushed (simulated)`);
+  document.getElementById("syncStatus").textContent=`Last synced: ${mlFmt(new Date().toISOString())} — ${members.length} member(s).`;
+}
+
+function removeMember(i){
+  const members=mlDeptMembers(DEPT);
+  const name=members[i].name;
+  if(!confirm(`Remove ${name} from the roster?`))return;
+  members.splice(i,1);
+  mlSaveDeptMembers(DEPT,members);
+  mlLog(AREA,"Member removed",name,"");
+  render();
+}
+</script>
+</body></html>
+

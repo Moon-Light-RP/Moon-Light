@@ -1,0 +1,61 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Police Promotions | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+    <nav class="ml-navlinks">
+    <a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html" class="">My Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a>
+    </nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">POLICE / PROMOTIONS</span><h1>Promotions</h1><p>Promote or demote a member and keep a record of every rank change.</p></div>
+<div id="lock" class="role-lock">Checking staff permissions...</div>
+<div id="box" style="display:none;margin-top:16px">
+<div class="ml-card">
+<h3>Change Rank</h3>
+<div class="ml-grid">
+<label>Member<select id="pMember"></select></label>
+<label>New Rank<select id="pRank"></select></label>
+</div>
+<label>Note<textarea id="pNote" placeholder="Reason for this rank change (optional)"></textarea></label>
+<button class="ml-btn primary" onclick="applyPromotion()">Apply Change</button>
+<div id="result" class="ml-alert" style="display:none"></div>
+</div>
+<div class="ml-card" style="margin-top:16px"><h3>Promotion History</h3><div id="history"></div></div>
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/portal.js"></script>
+<script>
+const DEPT="POLICE";
+const lock=document.getElementById("lock"), box=document.getElementById("box");
+if(mlRoleGate(lock,box,"Police","Police Cmd")) render();
+
+function render(){
+  const members=mlDeptMembers(DEPT);
+  const ranks=mlGetRanks(DEPT);
+  document.getElementById("pMember").innerHTML=members.length?members.map((m,i)=>`<option value="${i}">${mlEsc(m.name)} — ${mlEsc(m.rank)}</option>`).join(""):`<option value="">No members</option>`;
+  document.getElementById("pRank").innerHTML=ranks.map(r=>`<option>${mlEsc(r)}</option>`).join("");
+
+  let rows=[];
+  members.forEach(m=>(m.promotions||[]).forEach(p=>rows.push({m,p})));
+  rows.sort((a,b)=>new Date(b.p.date)-new Date(a.p.date));
+  document.getElementById("history").innerHTML=rows.length?`<table class="ml-table"><tbody><tr><th>Member</th><th>From</th><th>To</th><th>Date</th><th>Note</th></tr>${rows.map(({m,p})=>`<tr><td>${mlEsc(m.name)}</td><td>${mlEsc(p.from)}</td><td>${mlEsc(p.to)}</td><td>${mlFmt(p.date)}</td><td>${mlEsc(p.note||"—")}</td></tr>`).join("")}</tbody></table>`:`<div class="ml-muted">No promotions recorded yet.</div>`;
+}
+
+const AREA=DEPT==="POLICE"?"Police":"EMS";
+
+function applyPromotion(){
+  const members=mlDeptMembers(DEPT);
+  const idx=Number(document.getElementById("pMember").value);
+  if(isNaN(idx)||!members[idx]){alert("Select a member first.");return}
+  const newRank=document.getElementById("pRank").value;
+  const note=document.getElementById("pNote").value.trim();
+  const m=members[idx];
+  if(m.rank===newRank){alert("Member already holds this rank.");return}
+  const fromRank=m.rank;
+  m.promotions=m.promotions||[];
+  m.promotions.push({date:new Date().toISOString(),from:m.rank,to:newRank,note});
+  m.rank=newRank;
+  mlSaveDeptMembers(DEPT,members);
+  mlLog(AREA,`Rank change: ${fromRank} → ${newRank}`,m.name,note||"");
+  document.getElementById("pNote").value="";
+  const r=document.getElementById("result");r.style.display="block";r.textContent=`${m.name} is now ${newRank}.`;
+  render();
+}
+</script>
+</body></html>
+

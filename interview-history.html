@@ -1,0 +1,60 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Interview History | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+    <nav class="ml-navlinks">
+    <a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html" class="">My Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a>
+    </nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">STAFF / INTERVIEWS</span><h1>Interview History</h1><p>Every completed interview across all departments, most recent first.</p></div>
+<div id="lock" class="role-lock">Checking staff permissions...</div>
+<div id="box" style="display:none;margin-top:16px">
+<div class="ml-actions">
+<button class="ml-btn" onclick="setFilter('dept','all')">All Departments</button><button class="ml-btn" onclick="setFilter('dept','POLICE')">Police</button><button class="ml-btn" onclick="setFilter('dept','EMS')">EMS</button>
+<button class="ml-btn primary" onclick="setFilter('result','passed')">Passed</button><button class="ml-btn danger" onclick="setFilter('result','failed')">Failed</button><button class="ml-btn" onclick="setFilter('result','all')">All Results</button>
+</div>
+<div id="list" class="ml-grid" style="margin-top:14px"></div>
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/portal.js"></script>
+<script>
+const lock=document.getElementById("lock"), box=document.getElementById("box");
+let deptFilter="all", resultFilter="all";
+
+async function allowedDepts(){
+  const role=await mlRole();
+  if(role==="Management")return["CIVILIAN","POLICE","EMS"];
+  const d=[];
+  if(await mlHasPerm("Applications"))d.push("CIVILIAN");
+  if(await mlHasPerm("Police"))d.push("POLICE");
+  if(await mlHasPerm("EMS"))d.push("EMS");
+  return d;
+}
+async function checkAccess(){
+  const depts=await allowedDepts();
+  const role=await mlRole();
+  if(depts.length){lock.className="role-ok";lock.innerHTML=`Access granted — showing: ${depts.join(", ")}. Your role: <b>${role||"No staff role"}</b>`;box.style.display="block";return true}
+  lock.innerHTML=`Access denied. Your role: <b>${role||"No staff role"}</b>`;box.style.display="none";return false;
+}
+
+function setFilter(kind,val){if(kind==="dept")deptFilter=val;else resultFilter=val;render()}
+
+async function render(){
+  if(!(await checkAccess()))return;
+  const depts=await allowedDepts();
+  const all=await mlGetApps();
+  let rows=[];
+  all.forEach(a=>{if(depts.includes(a.type))(a.interview?.history||[]).forEach(h=>rows.push({a,h}))});
+  rows=rows.filter(r=>(deptFilter==="all"||r.a.type===deptFilter)&&(resultFilter==="all"||r.h.result===resultFilter));
+  rows.sort((x,y)=>new Date(y.h.date)-new Date(x.h.date));
+  const list=document.getElementById("list");
+  if(!rows.length){list.innerHTML=`<div class="ml-card" style="grid-column:1/-1">No interview history found.</div>`;return}
+  list.innerHTML=rows.map(({a,h})=>`<article class="application-card">
+    <h3>${mlEsc(a.characterName)} <span class="ml-pill">${mlEsc(a.type)}</span></h3>
+    <p class="ml-muted">${mlEsc(a.discord)}</p>
+    <div class="app-meta"><span>${mlFmt(h.date)}</span><span>Interviewer: ${mlEsc(h.interviewer)}</span><span class="ml-status ${h.result==="passed"?"accepted":"rejected"}">${mlEsc(h.result)}</span></div>
+    ${h.notes?`<p>${mlEsc(h.notes)}</p>`:""}
+  </article>`).join("");
+}
+(async function initInterviewHistory(){
+  if(await checkAccess()) await render();
+})();
+</script>
+</body></html>
+

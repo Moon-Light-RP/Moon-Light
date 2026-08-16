@@ -1,0 +1,84 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Interview Queue | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+    <nav class="ml-navlinks">
+    <a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html" class="">My Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a>
+    </nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">STAFF / INTERVIEWS</span><h1>Interview Queue</h1><p>Applications approved for interview move here. Schedule a time and interviewer, then run the interview.</p></div>
+<div id="lock" class="role-lock">Checking permission...</div>
+<div id="box" style="display:none;margin-top:16px">
+<div class="ml-actions"><button class="ml-btn" onclick="setTab('awaiting')">Awaiting Schedule</button><button class="ml-btn" onclick="setTab('scheduled')">Scheduled</button><a class="ml-btn" href="interview-history.html">Interview History →</a></div>
+<div id="list" class="ml-grid" style="margin-top:14px"></div>
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/portal.js"></script>
+<script>
+const lock=document.getElementById("lock"), box=document.getElementById("box");
+let tab="awaiting";
+
+async function allowedDepts(){
+  const role=await mlRole();
+  if(role==="Management")return["CIVILIAN","POLICE","EMS"];
+  const d=[];
+  if(await mlHasPerm("Applications"))d.push("CIVILIAN");
+  if(await mlHasPerm("Police"))d.push("POLICE");
+  if(await mlHasPerm("EMS"))d.push("EMS");
+  return d;
+}
+async function checkAccess(){
+  const depts=await allowedDepts();
+  const role=await mlRole();
+  if(depts.length){lock.className="role-ok";lock.innerHTML=`Access granted — showing: ${depts.join(", ")}. Your role: <b>${role||"No staff role"}</b>`;box.style.display="block";return true}
+  lock.innerHTML=`Access denied. Your role: <b>${role||"No staff role"}</b>`;box.style.display="none";return false;
+}
+function setTab(t){tab=t;render()}
+
+async function render(){
+  if(!(await checkAccess()))return;
+  const depts=await allowedDepts();
+  const all=await mlGetApps();
+  const rows=all.map((a,i)=>({a,i})).filter(x=>x.a.status==="interview"&&depts.includes(x.a.type));
+  const filtered=rows.filter(x=> tab==="awaiting" ? !x.a.interview?.scheduled : !!x.a.interview?.scheduled && !x.a.interview?.result);
+  const list=document.getElementById("list");
+  if(!filtered.length){list.innerHTML=`<div class="ml-card" style="grid-column:1/-1">No applications in this view.</div>`;return}
+  list.innerHTML=filtered.map(({a,i})=>{
+    const sched=a.interview?.scheduled;
+    return `<article class="application-card">
+      <h3>${mlEsc(a.characterName)} <span class="ml-pill">${a.type==="CIVILIAN"?"Civilian":mlEsc(a.type)}</span></h3>
+      <p class="ml-muted">${mlEsc(a.discord)} · ${mlEsc(a.experience||"—")}</p>
+      <div class="app-meta"><span>Submitted: ${mlEsc(a.submitted||"—")}</span></div>
+      ${sched?`<div class="ml-alert">Scheduled with <b>${mlEsc(sched.interviewer)}</b> at <b>${mlFmt(sched.datetime)}</b>${sched.notes?`<br>${mlEsc(sched.notes)}`:""}</div>
+      <div class="ml-actions"><a class="ml-btn primary" href="interview.html?idx=${i}">Start Interview →</a><button class="ml-btn" onclick="toggleForm(${i})">Reschedule</button></div>`
+      :`<div class="ml-actions"><button class="ml-btn primary" onclick="toggleForm(${i})">Schedule Interview</button></div>`}
+      <div id="form-${i}" style="display:none;margin-top:10px">
+        <label>Interviewer<input id="int-${i}" placeholder="Staff name" value="${mlEsc(sched?.interviewer||"")}"></label>
+        <label>Date & time<input id="dt-${i}" type="datetime-local" value="${sched?.datetime?sched.datetime.slice(0,16):""}"></label>
+        <label>Notes<textarea id="note-${i}" placeholder="Optional scheduling notes...">${mlEsc(sched?.notes||"")}</textarea></label>
+        <button class="ml-btn primary" onclick="schedule(${i})">Save Schedule</button>
+      </div>
+    </article>`;
+  }).join("");
+}
+
+function toggleForm(i){const f=document.getElementById("form-"+i);f.style.display=f.style.display==="none"?"block":"none"}
+
+async function schedule(i){
+  const interviewer=document.getElementById("int-"+i).value.trim();
+  const datetime=document.getElementById("dt-"+i).value;
+  const notes=document.getElementById("note-"+i).value.trim();
+  if(!interviewer||!datetime){alert("Interviewer and date/time are required.");return}
+  const all=await mlGetApps();
+  const a=all[i];
+  a.interview=a.interview||{history:[]};
+  a.interview.scheduled={interviewer,datetime,notes};
+  a.interview.result=null;
+  await mlSaveApps(all);
+  const dept=a.type==="CIVILIAN"?"Civilian":a.type;
+  await mlAddNotification(a.discord,ML_NOTIF_TYPES.INTERVIEW_SCHEDULED,`${dept} interview scheduled`,`Your ${dept} interview is scheduled for ${mlFmt(datetime)} with ${interviewer}.`);
+  await mlLog(a.type==="CIVILIAN"?"Applications":a.type,"Interview scheduled",a.characterName||"Unknown",`${mlFmt(datetime)} with ${interviewer}`);
+  await render();
+}
+
+(async function initInterviewQueue(){
+  if(await checkAccess()) await render();
+})();
+</script>
+</body></html>

@@ -1,0 +1,80 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Audit Log | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a><nav class="ml-navlinks"><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html">Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a></nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">ADMIN / AUDIT</span><h1>Audit Log</h1><p>Every staff action, who did it, what it targeted, and when. Management sees everything; Staff sees only areas they have access to.</p></div>
+<div id="lock" class="role-lock">Checking permission...</div>
+<div id="box" style="display:none;margin-top:16px">
+<div class="ml-card">
+<input id="search" placeholder="Search staff, action, or target..." style="width:100%" oninput="render()">
+<div class="ml-actions" style="margin-top:10px" id="areaFilters">
+<span class="ml-muted">Area:</span>
+<button class="ml-btn" onclick="setArea('all')">All</button><button class="ml-btn" onclick="setArea('Applications')">Applications</button><button class="ml-btn" onclick="setArea('Police')">Police</button><button class="ml-btn" onclick="setArea('EMS')">EMS</button><button class="ml-btn" onclick="setArea('Streamers')">Streamers</button><button class="ml-btn" onclick="setArea('Settings')">Settings</button>
+</div>
+</div>
+<div id="list" style="margin-top:16px"></div>
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/portal.js"></script>
+<script>
+const lock=document.getElementById("lock"), box=document.getElementById("box");
+let areaFilter="all", search="";
+
+async function visibleAreas(){
+  const role=await mlRole();
+  if(role==="Management")return["Applications","Police","EMS","Streamers","Settings"];
+  const a=[];
+  if(await mlHasPerm("Applications"))a.push("Applications");
+  if(await mlHasPerm("Police"))a.push("Police");
+  if(await mlHasPerm("EMS"))a.push("EMS");
+  if(await mlHasPerm("Streamers"))a.push("Streamers");
+  if(await mlHasPerm("Settings"))a.push("Settings");
+  return a;
+}
+
+async function checkAccess(){
+  const areas=await visibleAreas();
+  const role=await mlRole();
+  if(areas.length){
+    lock.className="role-ok";
+    lock.innerHTML=`Access granted — scoped to: ${areas.join(", ")}. Your role: <b>${role||"No staff role"}</b>`;
+    box.style.display="block";
+    return true;
+  }
+  lock.innerHTML=`Access denied. Your role has no audit-log access. Your role: <b>${role||"No staff role"}</b>`;
+  box.style.display="none";
+  return false;
+}
+function setArea(a){areaFilter=a;render()}
+
+async function render(){
+  if(!(await checkAccess()))return;
+  search=document.getElementById("search").value.trim().toLowerCase();
+  const areas=await visibleAreas();
+  
+  // Fetch audit logs from server
+  let rows=[];
+  try{
+    const response=await fetch("/api/audit-logs");
+    const data=await response.json();
+    if(data.ok){
+      rows=data.logs||[];
+    }
+  }catch(e){
+    console.error("Error fetching audit logs:",e);
+  }
+  
+  rows=rows.filter(e=>areas.includes(e.area));
+  if(areaFilter!=="all")rows=rows.filter(e=>e.area===areaFilter);
+  if(search)rows=rows.filter(e=>(e.discord_username||"").toLowerCase().includes(search)||(e.action||"").toLowerCase().includes(search)||(e.target||"").toLowerCase().includes(search));
+  const list=document.getElementById("list");
+  if(!rows.length){list.innerHTML=`<div class="ml-card">No matching audit entries.</div>`;return}
+  list.innerHTML=`<table class="ml-table"><tbody>
+    <tr><th>Staff Member</th><th>Action</th><th>Target</th><th>Date</th><th>Time</th><th>Details</th></tr>
+    ${rows.map(e=>`<tr><td>${mlEsc(e.discord_username)}</td><td>${mlEsc(e.action)}</td><td>${mlEsc(e.target||"—")}</td><td>${mlDate(e.created_at)}</td><td>${mlTime(e.created_at)}</td><td>${mlEsc(e.details||"—")}</td></tr>`).join("")}
+  </tbody></table>`;
+}
+
+function mlDate(d){if(!d)return"—";try{return new Date(d).toLocaleDateString()}catch(e){return d}}
+function mlTime(d){if(!d)return"—";try{return new Date(d).toLocaleTimeString()}catch(e){return d}}
+
+render();
+</script>
+</body></html>

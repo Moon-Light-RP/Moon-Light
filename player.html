@@ -1,0 +1,117 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Player Dashboard | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+    <nav class="ml-navlinks">
+    <a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html" class="active">My Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a>
+    </nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">PLAYER PORTAL</span><h1 id="welcome">Welcome back, Player.</h1><p>Track your profile, applications, interviews, and account status from one place.</p></div>
+
+<div id="noProfile" class="ml-alert" style="display:none">You haven't linked a Discord username yet, so we're showing your most recent local submission. <a href="profile.html" style="color:#ff5a5a;text-decoration:underline">Set up your profile</a> to always see the right applications.</div>
+
+<section class="ml-grid">
+ <article class="ml-card" style="border-color:#4b2020"><h3>My Profile</h3>
+   <p><b id="pName">—</b></p>
+   <p class="ml-muted" id="pDiscord">Discord: —</p>
+   <p class="ml-muted" id="pSteam">Steam: —</p>
+   <p class="ml-muted" id="pLinked">Discord account: not linked</p>
+   <div class="ml-actions"><a class="ml-btn primary" href="profile.html">Edit Profile</a></div>
+ </article>
+ <article class="ml-card" style="border-color:#4b2020"><h3>Account Status</h3>
+   <p id="acctStatus" style="font-weight:700">—</p>
+   <p class="ml-muted" id="acctMember">Member since: —</p>
+   <span class="ml-pill">Live Preview</span>
+ </article>
+ <article class="ml-card" style="border-color:#4b2020"><h3>Departments</h3>
+   <p id="acctDepts">No accepted department yet.</p>
+   <span class="ml-pill">Progression</span>
+ </article>
+</section>
+
+<section style="margin-top:20px">
+ <div class="ml-hero" style="padding:0 0 14px"><span class="ml-eyebrow">MY APPLICATIONS</span><h2 style="margin:6px 0 0">Application & Interview Status</h2></div>
+ <div id="appsGrid" class="ml-grid"></div>
+</section>
+
+<section class="ml-card" style="margin-top:20px;border-color:#4b2020"><h3>Notifications</h3><div id="notifications"></div></section>
+
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/portal.js"></script>
+<script>
+function getProfile(){try{return JSON.parse(localStorage.getItem("moon_light_profile_v1")||"{}")}catch(e){return{}}}
+function deptLabel(t){return t==="CIVILIAN"?"Civilian":t==="POLICE"?"Police":t==="EMS"?"EMS":(t||"Unknown")}
+function applyLink(t){return t==="POLICE"?"police-application.html":t==="EMS"?"ems-application.html":"application.html"}
+
+const profile=getProfile();
+const allApps=mlGetApps();
+const myDiscord=(profile.discordUser||"").trim().toLowerCase();
+let myApps=[];
+if(myDiscord){
+  myApps=allApps.filter(a=>(a.discord||"").trim().toLowerCase()===myDiscord);
+}else if(allApps.length){
+  document.getElementById("noProfile").style.display="block";
+  myApps=[allApps[allApps.length-1]];
+}
+
+/* Profile card */
+document.getElementById("welcome").textContent=`Welcome back, ${profile.displayName||"Player"}.`;
+document.getElementById("pName").textContent=profile.displayName||"Unnamed Player";
+document.getElementById("pDiscord").textContent="Discord: "+(profile.discordUser||"—");
+document.getElementById("pSteam").textContent="Steam: "+(profile.steamProfile||"—");
+const identity=mlGetIdentity();
+document.getElementById("pLinked").textContent=identity?`Discord account: linked (${identity.username})`:"Discord account: not linked — sign in via Login to link it";
+
+/* Account status card */
+if(myApps.length){
+  const earliest=myApps.map(a=>a.submitted).filter(Boolean).sort()[0];
+  document.getElementById("acctMember").textContent="Member since: "+(earliest||"—");
+  const anyAccepted=myApps.some(a=>a.status==="accepted");
+  const anyPending=myApps.some(a=>a.status==="pending"||a.status==="interview");
+  document.getElementById("acctStatus").textContent=anyAccepted?"Active — at least one accepted application":anyPending?"Application(s) in progress":"No active applications";
+}else{
+  document.getElementById("acctStatus").textContent="No applications submitted yet.";
+}
+const accepted=myApps.filter(a=>a.status==="accepted").map(a=>deptLabel(a.type));
+document.getElementById("acctDepts").textContent=accepted.length?accepted.join(", "):"No accepted department yet.";
+
+/* Applications grid */
+const grid=document.getElementById("appsGrid");
+if(!myApps.length){
+  grid.innerHTML=`<div class="ml-card" style="grid-column:1/-1">
+    <h3>No applications yet</h3>
+    <p class="ml-muted">Start your story at MOON LIGHT — apply to join, or apply directly to a department.</p>
+    <div class="ml-actions"><a class="ml-btn primary" href="application.html">Civilian Application</a><a class="ml-btn" href="police-application.html">Police Application</a><a class="ml-btn" href="ems-application.html">EMS Application</a></div>
+  </div>`;
+}else{
+  grid.innerHTML=myApps.map(a=>{
+    const dept=deptLabel(a.type);
+    let interviewHtml;
+    if(a.interview?.result){
+      const last=(a.interview.history||[]).slice(-1)[0];
+      interviewHtml=`<p><b>Interview:</b> ${a.interview.result==="passed"?"Passed ✓":"Failed ✕"}${last?` — ${mlFmt(last.date)}`:""}</p>`;
+    }else if(a.interview?.scheduled){
+      interviewHtml=`<p><b>Interview:</b> Scheduled — ${mlFmt(a.interview.scheduled.datetime)}<br><span class="ml-muted">Interviewer: ${mlEsc(a.interview.scheduled.interviewer)}</span></p>`;
+    }else if(a.status==="interview"){
+      interviewHtml=`<p><b>Interview:</b> Approved for interview — awaiting scheduling</p>`;
+    }else{
+      interviewHtml=`<p><b>Interview:</b> Not scheduled</p>`;
+    }
+    return `<article class="ml-card" style="border-color:#4b2020">
+      <div class="app-meta"><span class="ml-pill">${mlEsc(dept)}</span><span class="ml-status ${a.status||"pending"}">${mlEsc(a.status||"pending")}</span></div>
+      <h3 style="margin-top:8px">${mlEsc(dept)} Application</h3>
+      <p class="ml-muted">Submitted ${mlEsc(a.submitted||"—")}</p>
+      ${interviewHtml}
+      <div class="ml-actions"><a class="ml-btn primary" href="${applyLink(a.type)}">View / Update</a></div>
+    </article>`;
+  }).join("");
+}
+
+/* Notifications — real event log (Application Submitted/Approved/Rejected, Interview Scheduled/Result, Department Accepted, Staff Announcement) */
+const notifBox=document.getElementById("notifications");
+const myNotifs=myDiscord?mlNotifsFor(myDiscord):(allApps.length?mlNotifsFor(allApps[allApps.length-1].discord):mlGetNotifs().filter(n=>n.toDiscord===null));
+if(!myNotifs.length){
+  notifBox.innerHTML=`<div class="ml-alert">No new notifications.</div>`;
+}else{
+  notifBox.innerHTML=myNotifs.slice(0,20).map(n=>`<div class="ml-alert"><span class="ml-pill">${mlEsc(n.type)}</span><br><b>${mlEsc(n.title)}</b><br>${mlEsc(n.body)}<br><span class="ml-muted">${mlFmt(n.date)}</span></div>`).join("");
+}
+</script>
+</body>
+</html>
+
