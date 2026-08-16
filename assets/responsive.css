@@ -1,0 +1,7 @@
+.nav.open nav{display:flex;flex-direction:column;gap:16px;padding:18px 5%;background:rgba(6,8,16,.96);position:absolute;top:76px;left:0;right:0;border-bottom:1px solid rgba(255,255,255,.08);z-index:12}
+.nav.open nav a{display:block;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.nav.open nav a:last-child{border-bottom:none}
+@media(max-width:850px){
+  .nav.open{background:rgba(6,8,16,.98)}
+  .nav.open .menu{position:relative;z-index:13}
+}

@@ -1,0 +1,352 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"><style>
+.login-container {
+    max-width: 450px;
+    margin: 80px auto;
+    padding: 20px;
+}
+
+.login-card {
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.login-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 30px;
+    color: #f3f5fb;
+    text-decoration: none;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    font-size: 18px;
+}
+
+.login-moon {
+    width: 40px;
+    height: 40px;
+    border: 2px solid #3b82f6;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: #60a5fa;
+    font-size: 20px;
+}
+
+.login-eyebrow {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #60a5fa;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.login-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #f3f5fb;
+    margin: 0 0 12px 0;
+}
+
+.login-description {
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 30px;
+}
+
+.login-status {
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    text-align: left;
+}
+
+.login-status.connecting {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid #3b82f6;
+    color: #60a5fa;
+}
+
+.login-status.success {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid #10b981;
+    color: #34d399;
+}
+
+.login-status.error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    color: #f87171;
+}
+
+.login-status.info {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid #3b82f6;
+    color: #60a5fa;
+}
+
+.login-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.login-btn {
+    display: inline-block;
+    text-decoration: none;
+    border: 1px solid #2563eb;
+    background: linear-gradient(135deg, #1e3a5f, #2563eb);
+    color: #dbeafe;
+    border-radius: 12px;
+    padding: 14px 24px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    min-width: 140px;
+    text-align: center;
+}
+
+.login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+    border-color: #3b82f6;
+}
+
+.login-btn.primary {
+    background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    color: #0f172a;
+    border-color: #3b82f6;
+}
+
+.login-btn.danger {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: #ffffff;
+    border-color: #dc2626;
+}
+
+.login-btn.danger:hover {
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+    border-color: #ef4444;
+}
+
+.user-info {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid #3b82f6;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.user-info strong {
+    color: #f3f5fb;
+    font-weight: 600;
+}
+
+.user-info b {
+    color: #60a5fa;
+    font-weight: 600;
+}
+
+@media (max-width: 600px) {
+    .login-container {
+        margin: 40px auto;
+        padding: 16px;
+    }
+    
+    .login-card {
+        padding: 30px 20px;
+    }
+    
+    .login-actions {
+        flex-direction: column;
+    }
+    
+    .login-btn {
+        width: 100%;
+    }
+}
+</style></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+    <nav class="ml-navlinks">
+    <a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html" class="">My Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a>
+    </nav></header><main class="ml-container">
+<div class="login-container">
+    <div class="login-card">
+        <a class="login-brand" href="index.html">
+            <span class="login-moon">☾</span>
+            MOON LIGHT
+        </a>
+        <span class="login-eyebrow">ACCOUNT ACCESS</span>
+        <h1 class="login-title">Sign in with Discord</h1>
+        <p class="login-description">Connect your Discord identity to access the site. Your role is automatically detected from the Staff Directory based on your Discord ID.</p>
+
+        <div id="loggedOut">
+            <div class="login-actions">
+                <a id="discordAuthLink" class="login-btn primary" href="#">Continue with Discord</a>
+            </div>
+            <div id="discordStatus" class="login-status connecting">Connecting to Discord...</div>
+            <div class="login-status info">
+                <a href="https://discord.gg/E4TyrppE6q" target="_blank" style="color:inherit;text-decoration:underline">Join our Discord server</a>
+            </div>
+        </div>
+
+        <div id="loggedIn" style="display:none">
+            <div class="user-info">
+                Signed in as <b id="whoName"></b>. Your role: <b id="whoRole"></b>.
+            </div>
+            <div class="login-actions">
+                <a class="login-btn" href="player.html">Player Dashboard</a>
+                <a class="login-btn" href="staff-panel.html">Staff Panel</a>
+                <button class="login-btn danger" onclick="doLogout()">Sign Out</button>
+            </div>
+        </div>
+
+        <div class="login-status info" style="margin-top:20px">
+            Your role is automatically detected from the Staff Directory based on your Discord ID and username.
+        </div>
+    </div>
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer><script src="assets/portal.js"></script>
+<script>
+let authBase="";
+const params=new URLSearchParams(window.location.search);
+const isSuccess=params.get("discord")==="success";
+
+document.getElementById("discordAuthLink").href="#";
+
+function setAuthLink(base){document.getElementById("discordAuthLink").href=`${base}/auth/discord`;}
+
+// Add click handler to Discord button
+document.getElementById("discordAuthLink").addEventListener("click", async function(e) {
+  e.preventDefault();
+  console.log("Discord button clicked");
+  
+  if(!authBase) {
+    console.log("Resolving auth base...");
+    await resolveAuthBase();
+  }
+  
+  console.log("Auth base:", authBase);
+  
+  if(authBase) {
+    window.location.href = `${authBase}/auth/discord`;
+  } else {
+    // Fallback to current origin
+    console.log("Using current origin as fallback");
+    window.location.href = `/auth/discord`;
+  }
+});
+
+async function resolveAuthBase(){
+  // Try different base URLs depending on environment
+  const candidates = [
+    "", // Current origin
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001", 
+    "http://localhost:3000",
+    "http://localhost:3001"
+  ];
+  
+  for(const base of candidates){
+    try{
+      const url = base ? `${base}/api/status` : '/api/status';
+      const response=await fetch(url);
+      if(response.ok){
+        const data=await response.json();
+        if(data.ok){authBase=base;setAuthLink(authBase);return authBase;}
+      }
+    }catch(e){}
+  }
+  
+  // Fallback to current origin
+  authBase="";setAuthLink(authBase);return authBase;
+}
+
+async function refresh(){
+  try{
+    console.log("Starting refresh...");
+    const id=await mlGetIdentity();
+    console.log("Got identity:", id);
+    const role=await mlRole();
+    console.log("Got role ID:", role);
+    const roleName=await mlGetRoleName();
+    console.log("Got role name:", roleName);
+    
+    document.getElementById("loggedOut").style.display=id?"none":"block";
+    document.getElementById("loggedIn").style.display=id?"block":"none";
+    if(id){
+      document.getElementById("whoName").textContent=id.username;
+      // Ensure roleName is a string
+      const displayRole = typeof roleName === 'string' ? roleName : 'Player';
+      document.getElementById("whoRole").textContent=displayRole;
+      console.log("Updated UI with role:", displayRole);
+      
+      // Show/hide staff panel based on role label
+      const staffPanelLink=document.querySelector('a[href="staff-panel.html"]');
+      if(staffPanelLink){
+        if(role!=='PLAYER' && role!==''){
+          staffPanelLink.style.display="inline-block";
+        }else{
+          staffPanelLink.style.display="none";
+        }
+      }
+    }
+  }catch(e){
+    console.error("Error in refresh:",e);
+    document.getElementById("loggedOut").style.display="block";
+    document.getElementById("loggedIn").style.display="none";
+  }
+}
+
+async function syncDiscordSession(){
+  const status=document.getElementById("discordStatus");
+  try{
+    await resolveAuthBase();
+    const [meResponse,statusResponse]=await Promise.all([fetch(`${authBase}/auth/me`),fetch(`${authBase}/api/status`)]);
+    const data=await meResponse.json();
+    const service=await statusResponse.json();
+    if(data.authenticated && data.user){
+      const user=data.user;
+      const displayName=user.global_name || user.username;
+      const identity={username:displayName,discordId:user.id,linkedAt:new Date().toISOString()};
+      await mlSetIdentity(identity);
+      // Don't use mlAutoRole here - let refresh() handle it via mlRole()
+      status.className="login-status success";
+      status.innerHTML=isSuccess?`<strong>Discord login successful.</strong> Welcome, ${displayName}.`:`<strong>Connected to Discord.</strong> Welcome, ${displayName}.`;
+      await refresh();
+      return;
+    }
+    if(service.discordConfigured){
+      status.className="login-status success";
+      status.innerHTML=isSuccess?"Discord login completed successfully. Your session is ready." : "Discord OAuth is ready. Click the button above to continue.";
+    } else {
+      status.className="login-status error";
+      status.innerHTML="Discord OAuth is not fully configured yet.";
+    }
+  } catch (error) {
+    status.className="login-status connecting";
+    status.textContent="Click the button above to sign in with Discord.";
+  }
+}
+
+(async function initLogin(){
+  await refresh();
+  await syncDiscordSession();
+})();
+
+async function doLogout(){
+  try{await fetch(`${authBase}/auth/logout`);}catch(error){}
+  await mlClearIdentity();
+  await refresh();
+}
+</script>
+</body></html>

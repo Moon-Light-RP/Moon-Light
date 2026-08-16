@@ -1,0 +1,59 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tickets | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a><nav class="ml-navlinks"><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html">Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a></nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">STAFF / TICKETS</span><h1>Application Tickets</h1><p>Every submitted application automatically opens a ticket here — mirroring the Discord ticket channel a real bot would create.</p></div>
+<div id="lock" class="role-lock">Checking permission...</div>
+<div id="box" style="display:none;margin-top:16px">
+<div class="ml-grid" id="list"></div>
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/portal.js"></script>
+<script>
+const lock=document.getElementById("lock"), box=document.getElementById("box");
+
+async function visibleTypes(){
+  const role=await mlRole();
+  if(role==="Management")return["CIVILIAN","POLICE","EMS"];
+  const t=[];
+  if(await mlHasPerm("Applications"))t.push("CIVILIAN");
+  if(await mlHasPerm("Police"))t.push("POLICE");
+  if(await mlHasPerm("EMS"))t.push("EMS");
+  return t;
+}
+async function checkAccess(){
+  const t=await visibleTypes();
+  const role=await mlRole();
+  if(t.length){lock.className="role-ok";lock.innerHTML=`Access granted — showing tickets for: ${t.join(", ")}. Your role: <b>${role||"No staff role"}</b>`;box.style.display="block";return true}
+  lock.innerHTML=`Access denied. Your role: <b>${role||"No staff role"}</b>`;box.style.display="none";return false;
+}
+
+async function render(){
+  if(!(await checkAccess()))return;
+  const types=await visibleTypes();
+  const tickets=await mlGetTickets();
+  const filtered=tickets.filter(t=>types.includes(t.type));
+  const list=document.getElementById("list");
+  list.innerHTML=filtered.length?filtered.map(t=>`<article class="ml-card">
+    <div class="app-meta"><span class="ml-pill">${mlEsc(t.type)}</span><span class="ml-status ${t.status==="open"?"pending":"accepted"}">${mlEsc(t.status)}</span></div>
+    <h3 style="margin-top:8px">${mlEsc(t.channel)}</h3>
+    <p class="ml-muted">${mlEsc(t.characterName||"Unknown")} · ${mlEsc(t.discord||"—")}</p>
+    <p class="ml-muted">Opened ${mlFmt(t.created)}</p>
+    <button class="ml-btn" onclick="closeTicket('${t.id}')" ${t.status==="closed"?"disabled":""}>Close Ticket</button>
+  </article>`).join(""):`<div class="ml-card" style="grid-column:1/-1">No tickets yet.</div>`;
+}
+
+async function closeTicket(id){
+  const all=await mlGetTickets();
+  const t=all.find(x=>x.id===id);
+  if(t){
+    t.status="closed";
+    await mlSaveTickets(all);
+    await mlLog(t.type==="CIVILIAN"?"Applications":t.type,"Ticket closed",t.channel,"");
+    await mlPushDiscordLog("ticket",`${t.channel} closed`,"");
+    await render();
+  }
+}
+
+(async function initTickets(){
+  if(await checkAccess()) await render();
+})();
+</script>
+</body></html>

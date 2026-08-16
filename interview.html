@@ -1,0 +1,95 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Interview Workspace | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+    <nav class="ml-navlinks">
+    <a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html" class="">My Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a>
+    </nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">STAFF / INTERVIEW</span><h1>Interview Workspace</h1><p>Run the RolePlay interview here. These questions stay out of the public application.</p></div>
+<div id="notFound" class="ml-alert" style="display:none">No applicant selected. Open an interview from the <a href="interview-queue.html">Interview Queue</a>.</div>
+<div id="workspace" style="display:none">
+<div class="ml-card"><h3>Applicant</h3><div class="ml-grid">
+<div><p class="ml-muted">Name</p><b id="iName">—</b></div><div><p class="ml-muted">Department</p><b id="iDept">—</b></div><div><p class="ml-muted">Experience</p><b id="iExp">—</b></div><div><p class="ml-muted">Discord</p><b id="iDiscord">—</b></div>
+</div></div>
+<div class="ml-card" style="margin-top:14px"><h3>Schedule</h3><div class="ml-grid">
+<div><p class="ml-muted">Interviewer</p><b id="iInterviewer">—</b></div><div><p class="ml-muted">Date & time</p><b id="iWhen">—</b></div>
+</div></div>
+<div id="questionList" class="ml-grid" style="margin-top:14px"></div>
+<div class="ml-card" style="margin-top:14px"><h3>Final Interview Decision</h3><label class="ml-muted">Staff notes<textarea id="finalNotes" class="ml-note" placeholder="Write your interview notes..."></textarea></label><div class="ml-actions"><button class="ml-btn" onclick="saveProgress()">Save Progress</button><button class="ml-btn primary" onclick="finishInterview('passed')">Pass Interview</button><button class="ml-btn danger" onclick="finishInterview('failed')">Fail Interview</button></div><div id="result" class="ml-alert" style="display:none"></div></div>
+<div class="ml-card" style="margin-top:14px"><h3>Past Interview History</h3><div id="history">No previous interviews recorded.</div></div>
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/portal.js"></script>
+<script>
+const qs=["What is RolePlay, and what does good RolePlay mean to you?","What would you do if another player breaks character during a scene?","Explain RDM, VDM, metagaming, and powergaming.","How would your character react to a serious threat?","What would you do if you disagree with a staff decision?"];
+const idx=new URLSearchParams(location.search).get("idx");
+let app=null, all=[];
+
+if(idx!==null){all=mlGetApps();app=all[Number(idx)]||null}
+
+if(!app){document.getElementById("notFound").style.display="block"}
+else{
+  document.getElementById("workspace").style.display="block";
+  app.interview=app.interview||{history:[]};
+  document.getElementById("iName").textContent=app.characterName||"—";
+  document.getElementById("iDept").textContent=app.type||"—";
+  document.getElementById("iExp").textContent=app.experience||"—";
+  document.getElementById("iDiscord").textContent=app.discord||"—";
+  const sched=app.interview.scheduled;
+  document.getElementById("iInterviewer").textContent=sched?.interviewer||"Not scheduled";
+  document.getElementById("iWhen").textContent=sched?mlFmt(sched.datetime):"—";
+  document.getElementById("finalNotes").value=app.interview.draftNotes||"";
+
+  const saved=app.interview.answers||[];
+  const ql=document.getElementById("questionList");
+  ql.innerHTML=qs.map((q,i)=>{
+    const a=saved[i]||{score:0,note:""};
+    return `<article class="ml-card"><span class="ml-eyebrow">QUESTION ${String(i+1).padStart(2,"0")}</span><h3 style="margin-top:10px">${mlEsc(q)}</h3><div class="ml-score">${[1,2,3,4,5].map(n=>`<button class="${a.score===n?"selected":""}" onclick="score(this,${i},${n})">${n}</button>`).join("")}</div><textarea class="ml-note" data-q="${i}" placeholder="Staff note / applicant answer...">${mlEsc(a.note)}</textarea></article>`;
+  }).join("");
+
+  renderHistory();
+}
+
+function score(btn,i,n){btn.parentElement.querySelectorAll("button").forEach(x=>x.classList.remove("selected"));btn.classList.add("selected");btn.parentElement.dataset.score=n}
+
+function collectAnswers(){
+  return qs.map((q,i)=>{
+    const card=document.querySelectorAll("#questionList .ml-card")[i];
+    const scoreEl=card.querySelector(".ml-score");
+    return {question:q,score:Number(scoreEl.dataset.score||0),note:card.querySelector("textarea").value};
+  });
+}
+
+function saveProgress(){
+  app.interview.answers=collectAnswers();
+  app.interview.draftNotes=document.getElementById("finalNotes").value;
+  all[Number(idx)]=app;
+  mlSaveApps(all);
+  const box=document.getElementById("result");box.style.display="block";box.textContent="Progress saved.";
+}
+
+function finishInterview(outcome){
+  const notes=document.getElementById("finalNotes").value.trim();
+  app.interview.answers=collectAnswers();
+  app.interview.result=outcome;
+  app.interview.history=app.interview.history||[];
+  app.interview.history.push({date:new Date().toISOString(),interviewer:app.interview.scheduled?.interviewer||"—",result:outcome,notes,answers:app.interview.answers});
+  app.status=outcome==="passed"?"accepted":"rejected";
+  all[Number(idx)]=app;
+  mlSaveApps(all);
+
+  const dept=app.type==="CIVILIAN"?"Civilian":app.type;
+  mlAddNotification(app.discord,ML_NOTIF_TYPES.INTERVIEW_RESULT,`${dept} interview ${outcome}`,outcome==="passed"?`You passed your ${dept} interview.`:`You did not pass your ${dept} interview.`);
+  if(outcome==="passed")mlAddNotification(app.discord,ML_NOTIF_TYPES.DEPT_ACCEPTED,`Welcome to ${dept}`,`You are now accepted into ${dept}.`);
+  mlLog(app.type==="CIVILIAN"?"Applications":app.type,`Interview result: ${outcome}`,app.characterName||"Unknown",notes||"");
+
+  const box=document.getElementById("result");box.style.display="block";
+  box.textContent=outcome==="passed"?"Interview marked as PASSED. Application status set to Accepted.":"Interview marked as FAILED. Application status set to Rejected.";
+  renderHistory();
+}
+
+function renderHistory(){
+  const hist=app.interview.history||[];
+  const el=document.getElementById("history");
+  if(!hist.length){el.textContent="No previous interviews recorded.";return}
+  el.innerHTML=`<table class="ml-table"><tbody><tr><th>Date</th><th>Interviewer</th><th>Result</th><th>Notes</th></tr>${hist.map(h=>`<tr><td>${mlFmt(h.date)}</td><td>${mlEsc(h.interviewer)}</td><td><span class="ml-status ${h.result==="passed"?"accepted":"rejected"}">${mlEsc(h.result)}</span></td><td>${mlEsc(h.notes||"—")}</td></tr>`).join("")}</tbody></table>`;
+}
+</script>
+</body></html>

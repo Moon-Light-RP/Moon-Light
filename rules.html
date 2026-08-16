@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Server Rules | MOON LIGHT</title>
+<link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/responsive.css">
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="index.html"><span class="brand-mark">☾</span> MOON LIGHT</a>
+  <nav><a href="index.html">Home</a><a href="index.html#departments">Departments</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a class="btn small" href="login.html">Login</a></nav>
+</header>
+<main class="form-page">
+  <div class="form-hero">
+    <span>MOON LIGHT SERVER RULES</span>
+    <h1>Know the rules.<br>Respect the story.</h1>
+    <p>Read these rules carefully before applying. The rules will also be reviewed during the interview process.</p>
+  </div>
+  <div class="rule-list" id="ruleList"></div>
+  <div class="join-banner" style="margin:50px 0 0">
+    <div><span>READY?</span><h2>Finished reading?</h2><p>Continue to the application and tell us about your character.</p></div>
+    <a class="btn" href="application.html">Start Application →</a>
+  </div>
+</main>
+<footer><small>© 2026 MOON LIGHT RolePlay. All rights reserved.</small></footer>
+<script src="assets/ml.js"></script>
+<script src="assets/portal.js"></script>
+<script>
+(function(){
+  const rules=mlGetContent().rules;
+  document.getElementById("ruleList").innerHTML=rules.map((r,i)=>`<div><b>${String(i+1).padStart(2,"0")}</b><div><h3>${mlEsc(r.title)}</h3><p>${mlEsc(r.body)}</p></div></div>`).join("");
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Settings | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a><nav class="ml-navlinks"><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html">Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a></nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">MANAGEMENT</span><h1>Settings</h1><p>Management-only controls. Everything here is local and drives what the rest of the site displays.</p></div>
+<div id="lock" class="role-lock">Checking permission...</div>
+<div id="box" style="display:none;margin-top:16px">
+
+<div class="ml-card">
+<h3>Staff Identity</h3>
+<p class="ml-muted">Your staff name for system attribution.</p>
+<label>Your staff name<input id="staffName" style="background:#080b12;color:#e4e8f1;border:1px solid #252c3b;padding:11px;border-radius:8px;width:100%;box-sizing:border-box;"></label>
+<button class="ml-btn primary" onclick="saveStaffName()">Save</button>
+</div>
+
+<div class="ml-card" style="margin-top:16px">
+<h3>FiveM Server Status</h3>
+<p class="ml-muted">Server status information displayed on the homepage.</p>
+<div class="ml-grid">
+<label>Status<select id="svOnline"><option value="true">Online</option><option value="false">Offline</option></select></label>
+<label>Current Players<input id="svPlayers" type="number" min="0"></label>
+<label>Max Players<input id="svMax" type="number" min="1"></label>
+</div>
+<button class="ml-btn primary" onclick="saveServerStatus()">Update Status</button>
+<p class="ml-muted" id="lastSync" style="margin-top:8px"></p>
+</div>
+
+<div class="ml-card" style="margin-top:16px">
+<h3>More Management Tools</h3>
+<div class="ml-actions">
+<a class="ml-btn" href="staff-directory.html">Staff Directory (Discord Roles) →</a>
+<a class="ml-btn" href="content-management.html">Content Management (Rules / FAQ) →</a>
+</div>
+</div>
+
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/portal.js"></script>
+<script>
+const lock=document.getElementById("lock"), box=document.getElementById("box");
+if(mlRoleGate(lock,box,"Settings","Management")){
+  document.getElementById("staffName").value=mlStaffName();
+  const s=mlGetServerStatus();
+  document.getElementById("svOnline").value=String(s.online);
+  document.getElementById("svPlayers").value=s.players;
+  document.getElementById("svMax").value=s.maxPlayers;
+  document.getElementById("lastSync").textContent="Last updated: "+mlFmt(s.lastSync);
+}
+
+function saveStaffName(){
+  const n=document.getElementById("staffName").value.trim()||"Moon Light Staff";
+  mlSetStaffName(n);
+  mlLog("Settings","Staff name updated",n,"");
+  alert("Saved.");
+}
+function saveServerStatus(){
+  const s={online:document.getElementById("svOnline").value==="true",players:Number(document.getElementById("svPlayers").value)||0,maxPlayers:Number(document.getElementById("svMax").value)||1};
+  mlSaveServerStatus(s);
+  mlLog("Settings",`Server status updated`,s.online?"Online":"Offline",`${s.players}/${s.maxPlayers} players`);
+  document.getElementById("lastSync").textContent="Last updated: "+mlFmt(mlGetServerStatus().lastSync);
+  alert("Server status updated.");
+}
+</script>
+</body></html>

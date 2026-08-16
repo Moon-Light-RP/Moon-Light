@@ -1,0 +1,166 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Staff Panel — Applications | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a><nav class="ml-navlinks"><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html">Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a></nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">STAFF PANEL</span><h1>Applications</h1><p>Search and filter every application across Civilian, Police, and EMS. Your view is automatically scoped to your permissions.</p></div>
+<div id="lock" class="role-lock">Checking permission...</div>
+<div id="box" style="display:none;margin-top:16px">
+<div class="ml-card">
+<div class="ml-actions">
+<input id="search" placeholder="Search applicant name or Discord..." style="flex:2;min-width:220px" oninput="render()">
+</div>
+<div class="ml-actions" style="margin-top:10px">
+<span class="ml-muted">Status:</span>
+<button class="ml-btn" onclick="setStatus('all')">All</button><button class="ml-btn" onclick="setStatus('pending')">Pending</button><button class="ml-btn" onclick="setStatus('under_review')">Under Review</button><button class="ml-btn" onclick="setStatus('interview')">Interview</button><button class="ml-btn primary" onclick="setStatus('accepted')">Approved</button><button class="ml-btn danger" onclick="setStatus('rejected')">Rejected</button>
+</div>
+<div class="ml-actions" id="deptFilters" style="margin-top:10px">
+<span class="ml-muted">Department:</span>
+<button class="ml-btn" onclick="setDept('all')">All</button><button class="ml-btn" onclick="setDept('CIVILIAN')">Civilian</button><button class="ml-btn" onclick="setDept('POLICE')">Police</button><button class="ml-btn" onclick="setDept('EMS')">EMS</button>
+</div>
+</div>
+<div id="list" class="ml-grid" style="margin-top:16px"></div>
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/portal.js"></script>
+<script>
+const lock=document.getElementById("lock"), box=document.getElementById("box");
+let statusFilter="all", deptFilter="all", searchTerm="";
+
+/* Role IDs for flexibility */
+const ML_ROLE_IDS={
+  MANAGEMENT:"MANAGEMENT_ROLE_ID",
+  ADMINISTRATOR:"ADMINISTRATOR_ROLE_ID",
+  MODERATOR:"MODERATOR_ROLE_ID",
+  SUPPORT:"SUPPORT_ROLE_ID",
+  POLICE_MANAGEMENT:"POLICE_MANAGEMENT_ROLE_ID",
+  EMS_MANAGEMENT:"EMS_MANAGEMENT_ROLE_ID"
+};
+
+/* Work out which departments this viewer is allowed to see. *//* Role IDs for flexibility */
+const ML_ROLE_IDS={
+  MANAGEMENT:"MANAGEMENT_ROLE_ID",
+  ADMINISTRATOR:"ADMINISTRATOR_ROLE_ID",
+  MODERATOR:"MODERATOR_ROLE_ID",
+  SUPPORT:"SUPPORT_ROLE_ID",
+  POLICE_MANAGEMENT:"POLICE_MANAGEMENT_ROLE_ID",
+  EMS_MANAGEMENT:"EMS_MANAGEMENT_ROLE_ID"
+};
+
+/* Work out which departments this viewer is allowed to see. */
+async function allowedDepts(){
+  const roleId=await mlRole();
+  const roleName=await mlGetRoleName();
+  if(roleId===ML_ROLE_IDS.MANAGEMENT)return["CIVILIAN","POLICE","EMS"];
+  const d=[];
+  if(await mlHasPerm("Applications"))d.push("CIVILIAN");
+  if(await mlHasPerm("police.view"))d.push("POLICE");
+  if(await mlHasPerm("ems.view"))d.push("EMS");
+  return d;
+}
+
+async function checkAccess(){
+  const depts=await allowedDepts();
+  const roleId=await mlRole();
+  const roleName=await mlGetRoleName();
+  if(depts.length){
+    lock.className="role-ok";
+    lock.innerHTML=`Access granted — showing: ${depts.map(d=>d==="CIVILIAN"?"Civilian":d).join(", ")}. Your role: <b>${roleName||"Player"}</b>`;
+    box.style.display="block";
+    document.getElementById("deptFilters").style.display=depts.length>1?"flex":"none";
+    return true;
+  }
+  lock.innerHTML=`Access denied. Your role doesn't have access to any application queue. Your role: <b>${roleName||"Player"}</b>`;
+  box.style.display="none";
+  return false;
+}
+
+function setStatus(s){statusFilter=s;render()}
+function setDept(d){deptFilter=d;render()}
+
+async function render(){
+  if(!(await checkAccess()))return;
+  searchTerm=document.getElementById("search").value.trim().toLowerCase();
+  const depts=await allowedDepts();
+  const all=await mlGetApps();
+  let rows=all.map((a,i)=>({a,i})).filter(x=>depts.includes(x.a.type));
+  if(deptFilter!=="all")rows=rows.filter(x=>x.a.type===deptFilter);
+  if(statusFilter!=="all")rows=rows.filter(x=>(x.a.status||"pending")===statusFilter);
+  if(searchTerm)rows=rows.filter(x=>(x.a.characterName||"").toLowerCase().includes(searchTerm)||(x.a.discord||"").toLowerCase().includes(searchTerm));
+
+  const list=document.getElementById("list");
+  if(!rows.length){list.innerHTML=`<div class="ml-card" style="grid-column:1/-1">No applications match this view.</div>`;return}
+  list.innerHTML=rows.map(({a,i})=>`<article class="application-card">
+    <h3>${mlEsc(a.characterName)||"Unknown"} <span class="ml-pill">${a.type==="CIVILIAN"?"Civilian":mlEsc(a.type)}</span></h3>
+    <p class="ml-muted">${mlEsc(a.discord)||"No Discord"}</p>
+    <div class="app-meta"><span>${mlEsc(a.experience||"—")}</span><span>${mlEsc(a.submitted||"—")}</span><span class="ml-status ${a.status||"pending"}">${mlEsc(a.status||"pending")}</span></div>
+    ${a.assigned_to?`<div class="ml-muted" style="margin-top:8px;font-size:10px">Assigned to: <strong>${mlEsc(a.assigned_to)}</strong></div>`:""}
+    <div class="review-actions">
+      <button class="ml-btn" onclick="assignApp(${i})">Assign</button>
+      <button class="ml-btn" onclick="setAppStatus(${i},'under_review')">Under Review</button>
+      <button class="ml-btn" onclick="setAppStatus(${i},'interview')">Interview</button>
+      <button class="ml-btn primary" onclick="setAppStatus(${i},'accepted')">Accept</button>
+      <button class="ml-btn danger" onclick="setAppStatus(${i},'rejected')">Reject</button>
+    </div>
+  </article>`).join("");
+}
+
+async function setAppStatus(i,status){
+  const all=await mlGetApps();
+  const a=all[i];
+  if(!a)return;
+  const area=a.type==="CIVILIAN"?"Applications":a.type;
+  if(!(await mlHasPerm(area))){alert("You don't have permission to update this application.");return}
+  
+  // Update status via API
+  try{
+    const response=await fetch(`/api/applications/${a.id}/status`,{
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({status})
+    });
+    const data=await response.json();
+    if(data.ok){
+      const deptName=a.type==="CIVILIAN"?"Civilian":a.type;
+      if(status==="accepted"){
+        await mlAddNotification(a.discord,ML_NOTIF_TYPES.APPROVED,`${deptName} application approved`,`Your ${deptName} application has been approved.`);
+        await mlAddNotification(a.discord,ML_NOTIF_TYPES.DEPT_ACCEPTED,`Welcome to ${deptName}`,`You are now accepted into ${deptName}.`);
+      }else if(status==="rejected"){
+        await mlAddNotification(a.discord,ML_NOTIF_TYPES.REJECTED,`${deptName} application rejected`,`Your ${deptName} application was not accepted this time.`);
+      }
+      await render();
+    }else{
+      alert("Failed to update status: "+data.error);
+    }
+  }catch(e){
+    alert("Error updating status: "+e.message);
+  }
+}
+
+async function assignApp(i){
+  const all=await mlGetApps();
+  const a=all[i];
+  if(!a)return;
+  
+  const staffUsername=prompt("Enter staff username to assign this application:");
+  if(!staffUsername)return;
+  
+  try{
+    const response=await fetch(`/api/applications/${a.id}/assign`,{
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({assigned_to:staffUsername})
+    });
+    const data=await response.json();
+    if(data.ok){
+      alert("Application assigned successfully!");
+      await render();
+    }else{
+      alert("Failed to assign: "+data.error);
+    }
+  }catch(e){
+    alert("Error assigning application: "+e.message);
+  }
+}
+
+(async function initStaffApplications(){
+  if(await checkAccess()) await render();
+})();
+</script>
+</body></html>

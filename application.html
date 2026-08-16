@@ -1,0 +1,224 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Application | MOON LIGHT</title><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/responsive.css"></head>
+<body><header class="nav"><a class="brand" href="index.html"><span class="brand-mark">☾</span> MOON LIGHT</a><nav><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="index.html#faq">FAQ</a><a class="btn small" href="login.html">Login</a></nav></header><main class="form-page">
+<div id="verificationLock" class="verification-lock" style="display:none">
+  <div class="lock-content">
+    <h2>Discord Verification Required</h2>
+    <p>You must be logged in with Discord to submit an application.</p>
+    <a class="btn" href="login.html">Login with Discord →</a>
+  </div>
+</div>
+
+<div id="verificationSuccess" class="verification-success" style="display:none">
+  <div class="success-content">
+    <h2>✓ Verified Moon Light Member</h2>
+    <div class="user-info">
+      <p><strong>Discord User:</strong> <span id="discordUser">Loading...</span></p>
+      <p><strong>Discord ID:</strong> <span id="discordId">Loading...</span></p>
+      <p><strong>Role:</strong> <span id="discordRole">Loading...</span></p>
+    </div>
+  </div>
+</div>
+
+<div id="applicationContent" style="display:none">
+<div class="form-hero"><span>MOON LIGHT APPLICATION</span><h1>Tell us about yourself.</h1><p>Take your time. Good applications help us build a better roleplay community.</p></div>
+<div class="steps"><span class="active">01 <small>Application</small></span><i></i><span>02 <small>Review</small></span></div>
+<form class="application-card" id="applicationForm">
+<div class="form-step active">
+<h2>Basic information</h2>
+<p class="muted">Tell us the basics so our staff can review your application.</p>
+<label>In-game name<input required name="name" placeholder="John Doe"></label>
+<div class="two">
+<label>Age<input required name="age" type="number" min="13" placeholder="18"></label>
+<label>Discord ID<input required name="discord" readonly placeholder="Auto-filled from Discord"></label>
+</div>
+<label>Steam profile link
+<input required name="steam" type="url" placeholder="https://steamcommunity.com/id/yourname">
+</label>
+<label>RolePlay experience
+<select required name="experience">
+<option value="">Select your level</option>
+<option>Beginner (less than 3 months)</option>
+<option>Intermediate (3–12 months)</option>
+<option>Advanced (over 1 year)</option>
+<option>Pro (over 2 years)</option>
+</select>
+</label>
+<label>Character backstory
+<textarea required name="backstory" placeholder="Tell us about your character, their background, goals, and personality..."></textarea>
+</label>
+<label>Why do you want to join MOON LIGHT?
+<textarea required name="why_join" placeholder="Tell us why you want to join our RolePlay community..."></textarea>
+</label>
+<div class="agreement">
+<input id="agree" type="checkbox" required>
+<label for="agree">I confirm I have read and understood the <a href="rules.html" target="_blank" style="color:#ff5a5a;text-decoration:underline">server rules</a> and I agree to follow them <strong style="color:#ff4d4d">*</strong></label>
+</div>
+<button type="button" class="btn next">Continue →</button>
+</div>
+<div class="form-step">
+<h2>Final review</h2>
+<p class="muted">Your RolePlay questions will be handled during the interview. Server rules are reviewed separately before you join.</p>
+
+<div class="agreement"><input id="truth" type="checkbox" required><label for="truth">The information in this application is accurate and honest.</label></div>
+<div class="form-actions"><button type="button" class="btn ghost back">← Back</button><button class="btn" type="submit">Submit Application ✓</button></div>
+<div id="formMsg"></div>
+</div></form>
+</div></main><footer><small>© 2026 MOON LIGHT RolePlay. All rights reserved.</small></footer><script src="assets/app.js"></script>
+<script src="assets/ml.js"></script>
+<script src="assets/portal.js"></script>
+<style>
+.verification-lock {
+  max-width: 500px;
+  margin: 80px auto;
+  padding: 40px;
+  background: #0c101b;
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  text-align: center;
+}
+.verification-lock h2 {
+  color: #eef1fb;
+  margin-bottom: 16px;
+}
+.verification-lock p {
+  color: #94a3b8;
+  margin-bottom: 24px;
+}
+.verification-success {
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 24px;
+  background: #0f2e1a;
+  border: 1px solid #2d5a3d;
+  border-radius: 12px;
+  text-align: center;
+}
+.verification-success h2 {
+  color: #4ade80;
+  margin-bottom: 16px;
+}
+.user-info {
+  background: #0a0e14;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+.user-info p {
+  color: #eef1fb;
+  margin: 8px 0;
+  display: flex;
+  justify-content: space-between;
+}
+.user-info strong {
+  color: #94a3b8;
+}
+</style>
+<script>
+async function checkDiscordVerification() {
+  const identity = await mlGetIdentity();
+  const role = await mlRole();
+  
+  const lock = document.getElementById('verificationLock');
+  const success = document.getElementById('verificationSuccess');
+  const content = document.getElementById('applicationContent');
+  
+  if (!identity || !identity.discordId) {
+    lock.style.display = 'block';
+    success.style.display = 'none';
+    content.style.display = 'none';
+    return false;
+  }
+  
+  lock.style.display = 'none';
+  success.style.display = 'block';
+  content.style.display = 'block';
+  
+  document.getElementById('discordUser').textContent = identity.username;
+  document.getElementById('discordId').textContent = identity.discordId;
+  document.getElementById('discordRole').textContent = role || 'Player';
+  
+  // Auto-fill Discord ID
+  const discordInput = document.querySelector('input[name="discord"]');
+  if (discordInput) {
+    discordInput.value = identity.discordId;
+  }
+  
+  return true;
+}
+
+checkDiscordVerification();
+
+document.getElementById("applicationForm").addEventListener("submit", async function(e){
+  e.preventDefault();
+  const f=e.target;
+  const identity = await mlGetIdentity();
+  
+  if (!identity || !identity.discordId) {
+    alert('You must be logged in with Discord to submit an application.');
+    window.location.href = 'login.html';
+    return;
+  }
+  
+  // Check for existing applications using new API
+  try {
+    const response = await fetch('/api/applications');
+    const data = await response.json();
+    
+    if (data.ok && data.applications) {
+      const existingApp = data.applications.find(app => 
+        ['pending', 'under_review', 'interview'].includes(app.status)
+      );
+      
+      if (existingApp) {
+        const statusText = existingApp.status.replace('_', ' ').toUpperCase();
+        alert(`❌ You already have an active application.\n\nStatus: ${statusText}\nSubmitted: ${new Date(existingApp.created_at).toLocaleString()}\n\nPlease wait for your current application to be processed before submitting a new one.`);
+        return;
+      }
+    }
+  } catch (error) {
+    console.error('Error checking existing applications:', error);
+  }
+  
+  // Submit new application using new API
+  const applicationData = {
+    type: "CIVILIAN",
+    character_name: f.name.value,
+    steam_url: f.steam.value,
+    age: parseInt(f.age.value),
+    experience: f.experience.value,
+    backstory: f.backstory.value,
+    why_join: f.why_join.value
+  };
+  
+  try {
+    const submitResponse = await fetch('/api/applications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(applicationData)
+    });
+    
+    const submitData = await submitResponse.json();
+    
+    if (!submitData.ok) {
+      if (submitData.error === 'You already have an active application') {
+        const statusText = submitData.existing.status.replace('_', ' ').toUpperCase();
+        alert(`❌ You already have an active application.\n\nStatus: ${statusText}\nType: ${submitData.existing.type}\nSubmitted: ${new Date(submitData.existing.created_at).toLocaleString()}\n\nPlease wait for your current application to be processed before submitting a new one.`);
+      } else {
+        alert('Error submitting application: ' + submitData.error);
+      }
+      return;
+    }
+    
+    await mlAddNotification(identity.discordId, ML_NOTIF_TYPES.SUBMITTED, "Civilian application submitted", "Your Civilian application has been received and is awaiting staff review.");
+    await mlCreateTicket("CIVILIAN", identity.discordId, f.name.value);
+    
+    alert('✅ Application submitted successfully! Your application is now pending review.');
+    window.location.href = 'player.html';
+  } catch (error) {
+    console.error('Error submitting application:', error);
+    alert('Error submitting application. Please try again.');
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Police Announcements | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+    <nav class="ml-navlinks">
+    <a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html" class="">My Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a>
+    </nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">POLICE / NOTICES</span><h1>Announcements & Internal Notices</h1><p>Department announcements can be shared with members. Internal notices stay staff-only.</p></div>
+<div id="lock" class="role-lock">Checking staff permissions...</div>
+<div id="box" style="display:none;margin-top:16px">
+<div class="ml-actions"><button class="ml-btn" onclick="setTab('announcements')">Department Announcements</button><button class="ml-btn" onclick="setTab('internal')">Internal Notices (Staff Only)</button></div>
+<div class="ml-card" style="margin-top:14px">
+<h3 id="formTitle">New Announcement</h3>
+<label>Title<input id="nTitle" placeholder="Title"></label>
+<label>Author<input id="nAuthor" placeholder="Your name"></label>
+<label>Message<textarea id="nBody" placeholder="Write the announcement..."></textarea></label>
+<button class="ml-btn primary" onclick="post()">Post</button>
+</div>
+<div id="list" class="ml-grid" style="margin-top:14px"></div>
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/portal.js"></script>
+<script>
+const DEPT="POLICE";
+const lock=document.getElementById("lock"), box=document.getElementById("box");
+let tab="announcements";
+if(mlRoleGate(lock,box,"Police","Police Cmd")) render();
+
+function setTab(t){tab=t;document.getElementById("formTitle").textContent=t==="announcements"?"New Announcement":"New Internal Notice";render()}
+
+function post(){
+  const title=document.getElementById("nTitle").value.trim();
+  const author=document.getElementById("nAuthor").value.trim()||"Staff";
+  const body=document.getElementById("nBody").value.trim();
+  if(!title||!body){alert("Title and message are required.");return}
+  const data=mlGetNotices(DEPT);
+  data[tab]=data[tab]||[];
+  data[tab].unshift({id:mlUid(),title,author,body,date:new Date().toISOString()});
+  mlSaveNotices(DEPT,data);
+  mlLog("Police",tab==="announcements"?"Department announcement posted":"Internal notice posted",title,"");
+  if(tab==="announcements")mlAddNotification(null,ML_NOTIF_TYPES.STAFF_ANNOUNCEMENT,`Police: ${title}`,body);
+  document.getElementById("nTitle").value="";document.getElementById("nBody").value="";
+  render();
+}
+
+function remove(id){
+  const data=mlGetNotices(DEPT);
+  data[tab]=(data[tab]||[]).filter(n=>n.id!==id);
+  mlSaveNotices(DEPT,data);
+  render();
+}
+
+function render(){
+  const data=mlGetNotices(DEPT);
+  const items=data[tab]||[];
+  const list=document.getElementById("list");
+  list.innerHTML=items.length?items.map(n=>`<article class="ml-card">
+    <span class="ml-eyebrow">${mlFmt(n.date)}</span>
+    <h3 style="margin-top:8px">${mlEsc(n.title)}</h3>
+    <p class="ml-muted">By ${mlEsc(n.author)}</p>
+    <p>${mlEsc(n.body)}</p>
+    <button class="ml-btn danger" onclick="remove('${n.id}')">Delete</button>
+  </article>`).join(""):`<div class="ml-card" style="grid-column:1/-1">Nothing posted yet.</div>`;
+}
+</script>
+</body></html>
+

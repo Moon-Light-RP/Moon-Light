@@ -1,0 +1,32 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Civilian Applications | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a><nav class="ml-navlinks"><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html">Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a></nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">CIVILIAN STAFF</span><h1>Civilian Applications</h1><p>Only staff members with the correct Discord role should have access to this page in production.</p></div>
+<div id="lock" class="role-lock">Checking staff permissions...</div>
+<div id="apps" style="display:none;margin-top:16px"><div class="ml-actions"><button class="ml-btn" onclick="filterApps('all')">All</button><button class="ml-btn" onclick="filterApps('pending')">Pending</button><button class="ml-btn" onclick="filterApps('interview')">Interview</button><button class="ml-btn" onclick="filterApps('accepted')">Accepted</button><button class="ml-btn danger" onclick="filterApps('rejected')">Rejected</button><a class="ml-btn" href="interview-queue.html">Interview Queue →</a></div><div id="list" class="ml-grid"></div></div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/portal.js"></script>
+<script>
+const lock=document.getElementById("lock"), appsBox=document.getElementById("apps");
+if(mlRoleGate(lock,appsBox,"Applications","Staff")) render("all");
+
+function render(filter){
+  const all=mlGetApps();
+  const list=all.filter(a=>a.type==="CIVILIAN").filter(a=>filter==="all"||a.status===filter);
+  document.getElementById("list").innerHTML=list.length?list.map(a=>{
+    const i=all.indexOf(a);
+    return `<article class="application-card"><h3>${mlEsc(a.characterName)||"Unknown"}</h3><p class="ml-muted">${mlEsc(a.discord)||"No Discord"}</p><div class="app-meta"><span>${mlEsc(a.experience||"—")}</span><span>${mlEsc(a.submitted||"—")}</span><span class="ml-status ${a.status||"pending"}">${mlEsc(a.status||"pending")}</span></div><div class="review-actions"><button class="ml-btn" onclick="setStatus(${i},'interview')">Interview</button><button class="ml-btn primary" onclick="setStatus(${i},'accepted')">Accept</button><button class="ml-btn danger" onclick="setStatus(${i},'rejected')">Reject</button></div></article>`;
+  }).join(""):`<div class="ml-card" style="grid-column:1/-1">No Civilian applications found.</div>`;
+}
+function filterApps(x){render(x)}
+function setStatus(i,status){
+  const all=mlGetApps();const a=all[i];if(!a)return;
+  const prev=a.status||"pending";
+  a.status=status;mlSaveApps(all);
+  if(status==="accepted"){mlAddNotification(a.discord,ML_NOTIF_TYPES.APPROVED,"Civilian application approved","Your Civilian application has been approved.");mlAddNotification(a.discord,ML_NOTIF_TYPES.DEPT_ACCEPTED,"Welcome to MOON LIGHT","You are now an accepted Civilian member.")}
+  else if(status==="rejected")mlAddNotification(a.discord,ML_NOTIF_TYPES.REJECTED,"Civilian application rejected","Your Civilian application was not accepted this time.");
+  mlLog("Applications",`Status changed: ${prev} → ${status}`,a.characterName||"Unknown",`Discord: ${a.discord||"—"}`);
+  render("all");
+}
+</script>
+</body>
+</html>
+

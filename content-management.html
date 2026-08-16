@@ -1,0 +1,71 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Content Management | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a><nav class="ml-navlinks"><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html">Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a></nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">MANAGEMENT / CONTENT</span><h1>Content Management</h1><p>Edit Rules, FAQ, and Website Announcements without touching HTML. Changes appear immediately on the public site.</p></div>
+<div id="lock" class="role-lock">Checking permission...</div>
+<div id="box" style="display:none;margin-top:16px">
+<div class="ml-actions"><button class="ml-btn" onclick="setTab('rules')">Rules</button><button class="ml-btn" onclick="setTab('faq')">FAQ</button><button class="ml-btn" onclick="setTab('announcements')">Website Announcements</button></div>
+
+<div id="rulesTab" style="display:none;margin-top:14px">
+<div class="ml-card"><h3>Add Rule</h3><label>Title<input id="rTitle" placeholder="Rule title"></label><label>Description<textarea id="rBody" placeholder="Rule description"></textarea></label><button class="ml-btn primary" onclick="addRule()">Add Rule</button></div>
+<div id="rulesList" class="ml-grid" style="margin-top:14px"></div>
+</div>
+
+<div id="faqTab" style="display:none;margin-top:14px">
+<div class="ml-card"><h3>Add FAQ Entry</h3><label>Question<input id="fQ" placeholder="Question"></label><label>Answer<textarea id="fA" placeholder="Answer"></textarea></label><button class="ml-btn primary" onclick="addFaq()">Add FAQ</button></div>
+<div id="faqList" class="ml-grid" style="margin-top:14px"></div>
+</div>
+
+<div id="annTab" style="display:none;margin-top:14px">
+<div class="ml-card"><h3>Post Website Announcement</h3><label>Title<input id="aTitle" placeholder="Title"></label><label>Message<textarea id="aBody" placeholder="Message shown on the homepage"></textarea></label><button class="ml-btn primary" onclick="addAnn()">Post Announcement</button></div>
+<div id="annList" class="ml-grid" style="margin-top:14px"></div>
+</div>
+
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/portal.js"></script>
+<script>
+const lock=document.getElementById("lock"), box=document.getElementById("box");
+let tab="rules";
+if(mlRoleGate(lock,box,"Settings","Management")) render();
+
+function setTab(t){tab=t;["rules","faq","ann"].forEach(x=>document.getElementById(x+"Tab").style.display=x===t?"block":"none");render()}
+setTab("rules");
+
+function render(){
+  const c=mlGetContent();
+  document.getElementById("rulesList").innerHTML=c.rules.map((r,i)=>`<article class="ml-card"><h3>${i+1}. ${mlEsc(r.title)}</h3><p>${mlEsc(r.body)}</p><button class="ml-btn danger" onclick="removeRule(${i})">Remove</button></article>`).join("");
+  document.getElementById("faqList").innerHTML=c.faq.map((f,i)=>`<article class="ml-card"><h3>${mlEsc(f.q)}</h3><p>${mlEsc(f.a)}</p><button class="ml-btn danger" onclick="removeFaq(${i})">Remove</button></article>`).join("");
+  document.getElementById("annList").innerHTML=c.siteAnnouncements.length?c.siteAnnouncements.map((a,i)=>`<article class="ml-card"><span class="ml-eyebrow">${mlFmt(a.date)}</span><h3 style="margin-top:8px">${mlEsc(a.title)}</h3><p>${mlEsc(a.body)}</p><button class="ml-btn danger" onclick="removeAnn(${i})">Remove</button></article>`).join(""):`<div class="ml-card" style="grid-column:1/-1">No website announcements posted.</div>`;
+}
+
+function addRule(){
+  const title=document.getElementById("rTitle").value.trim(), body=document.getElementById("rBody").value.trim();
+  if(!title||!body){alert("Title and description are required.");return}
+  const c=mlGetContent(); c.rules.push({title,body}); mlSaveContent(c);
+  mlLog("Settings","Rule added",title,"");
+  document.getElementById("rTitle").value="";document.getElementById("rBody").value="";
+  render();
+}
+function removeRule(i){const c=mlGetContent();const r=c.rules.splice(i,1)[0];mlSaveContent(c);mlLog("Settings","Rule removed",r?.title||"","");render()}
+
+function addFaq(){
+  const q=document.getElementById("fQ").value.trim(), a=document.getElementById("fA").value.trim();
+  if(!q||!a){alert("Question and answer are required.");return}
+  const c=mlGetContent(); c.faq.push({q,a}); mlSaveContent(c);
+  mlLog("Settings","FAQ entry added",q,"");
+  document.getElementById("fQ").value="";document.getElementById("fA").value="";
+  render();
+}
+function removeFaq(i){const c=mlGetContent();const f=c.faq.splice(i,1)[0];mlSaveContent(c);mlLog("Settings","FAQ entry removed",f?.q||"","");render()}
+
+function addAnn(){
+  const title=document.getElementById("aTitle").value.trim(), body=document.getElementById("aBody").value.trim();
+  if(!title||!body){alert("Title and message are required.");return}
+  const c=mlGetContent(); c.siteAnnouncements.unshift({title,body,date:new Date().toISOString()}); mlSaveContent(c);
+  mlAddNotification(null,ML_NOTIF_TYPES.STAFF_ANNOUNCEMENT,title,body);
+  mlLog("Settings","Website announcement posted",title,"");
+  document.getElementById("aTitle").value="";document.getElementById("aBody").value="";
+  render();
+}
+function removeAnn(i){const c=mlGetContent();const a=c.siteAnnouncements.splice(i,1)[0];mlSaveContent(c);mlLog("Settings","Website announcement removed",a?.title||"","");render()}
+</script>
+</body></html>

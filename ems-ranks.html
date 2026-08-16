@@ -1,0 +1,74 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EMS Ranks | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+    <nav class="ml-navlinks">
+    <a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html" class="">My Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a>
+    </nav></header><main class="ml-container">
+<div class="ml-hero"><span class="ml-eyebrow">EMS / RANKS</span><h1>Rank Structure</h1><p>Ranks are ordered from lowest to highest. This order is used across Members and Promotions.</p></div>
+<div id="lock" class="role-lock">Checking staff permissions...</div>
+<div id="box" style="display:none;margin-top:16px">
+<div class="ml-card">
+<h3>Add Rank</h3>
+<div class="ml-actions"><input id="newRank" placeholder="New rank name" style="flex:1"><button class="ml-btn primary" onclick="addRank()">Add</button></div>
+</div>
+<div class="ml-card" style="margin-top:16px"><h3>Current Order (lowest → highest)</h3><div id="rankList"></div></div>
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+<script src="assets/portal.js"></script>
+<script>
+const DEPT="EMS";
+const lock=document.getElementById("lock"), box=document.getElementById("box");
+if(mlRoleGate(lock,box,"EMS","EMS Cmd")) render();
+
+function render(){
+  const ranks=mlGetRanks(DEPT);
+  const members=mlDeptMembers(DEPT);
+  document.getElementById("rankList").innerHTML=ranks.map((r,i)=>{
+    const inUse=members.some(m=>m.rank===r);
+    return `<div class="ml-card" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <b>${i+1}. ${mlEsc(r)}</b>
+      <div class="ml-actions">
+        <button class="ml-btn" ${i===0?"disabled":""} onclick="move(${i},-1)">↑</button>
+        <button class="ml-btn" ${i===ranks.length-1?"disabled":""} onclick="move(${i},1)">↓</button>
+        <button class="ml-btn danger" ${inUse?"disabled title='In use by a member'":""} onclick="remove(${i})">Remove</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+const AREA=DEPT==="POLICE"?"Police":"EMS";
+
+function addRank(){
+  const v=document.getElementById("newRank").value.trim();
+  if(!v)return;
+  const ranks=mlGetRanks(DEPT);
+  if(ranks.includes(v)){alert("Rank already exists.");return}
+  ranks.push(v);
+  mlSaveRanks(DEPT,ranks);
+  mlLog(AREA,"Rank added",v,`New order position: ${ranks.length}`);
+  document.getElementById("newRank").value="";
+  render();
+}
+
+function move(i,dir){
+  const ranks=mlGetRanks(DEPT);
+  const j=i+dir;
+  if(j<0||j>=ranks.length)return;
+  [ranks[i],ranks[j]]=[ranks[j],ranks[i]];
+  mlSaveRanks(DEPT,ranks);
+  mlLog(AREA,"Rank order changed",ranks[j],`Swapped with ${ranks[i]}`);
+  render();
+}
+
+function remove(i){
+  const ranks=mlGetRanks(DEPT);
+  const members=mlDeptMembers(DEPT);
+  if(members.some(m=>m.rank===ranks[i])){alert("Cannot remove a rank currently assigned to a member.");return}
+  if(!confirm(`Remove rank "${ranks[i]}"?`))return;
+  const name=ranks[i];
+  ranks.splice(i,1);
+  mlSaveRanks(DEPT,ranks);
+  mlLog(AREA,"Rank removed",name,"");
+  render();
+}
+</script>
+</body></html>
+

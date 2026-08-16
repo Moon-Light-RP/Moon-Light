@@ -1,0 +1,132 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Police Application | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a><nav class="ml-navlinks"><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html">Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a></nav></header><main class="ml-container">
+<div id="verificationLock" class="role-lock" style="display:none">Discord verification required. <a href="login.html">Login with Discord</a></div>
+<div id="verificationSuccess" class="role-ok" style="display:none">✓ Verified: <span id="discordUser">Loading...</span></div>
+<div id="applicationContent" style="display:none">
+<div class="ml-hero"><span class="ml-eyebrow">POLICE RECRUITMENT</span><h1>Police Application</h1><p>Complete the application honestly. Approved applicants will be contacted for an interview.</p></div>
+<form class="ml-form dept-form" onsubmit="submitDept(event,'POLICE')">
+<div class="form-section"><h3>Personal Information</h3><p>Basic information used by the recruitment team.</p>
+<label>Character Name<input name="characterName" required placeholder="John Doe"></label>
+<label>Discord Username<input name="discord" required placeholder="username"></label>
+<label>Steam Profile<input name="steam" type="url" required placeholder="https://steamcommunity.com/id/..."></label>
+<label>Age<input name="age" type="number" min="13" max="100" required placeholder="18"></label>
+</div>
+<div class="form-section"><h3>RolePlay Information</h3><p>Tell us about your character and experience.</p>
+<label>RP Experience<select name="experience" required><option value="">Select</option><option>New to RP</option><option>Beginner</option><option>Intermediate</option><option>Experienced</option></select></label>
+<label>Character Backstory<textarea name="backstory" required placeholder="Tell us your character's story..."></textarea></label>
+<label>Why do you want to join Police?<textarea name="why" required placeholder="Use a clear and honest reason..."></textarea></label>
+<label>Previous Police Experience<textarea name="departmentExperience" placeholder="If none, write None."></textarea></label>
+<label>Availability<textarea name="availability" required placeholder="When are you usually available?"></textarea></label>
+</div>
+<div class="form-section"><label class="checkline"><input name="rules" type="checkbox" required> I confirm that I have read the MOON LIGHT rules and will follow them.</label><label class="checkline"><input name="truth" type="checkbox" required> I confirm that the information in this application is accurate.</label></div>
+<button class="ml-btn primary" type="submit">Submit Police Application</button>
+<div id="formResult" class="ml-alert" style="display:none"></div>
+</form>
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer><script src="assets/portal.js"></script>
+<script>
+async function checkDiscordVerification() {
+  const identity = await mlGetIdentity();
+  const role = await mlRole();
+  
+  const lock = document.getElementById('verificationLock');
+  const success = document.getElementById('verificationSuccess');
+  const content = document.getElementById('applicationContent');
+  
+  if (!identity || !identity.discordId) {
+    lock.style.display = 'block';
+    success.style.display = 'none';
+    content.style.display = 'none';
+    return false;
+  }
+  
+  lock.style.display = 'none';
+  success.style.display = 'block';
+  content.style.display = 'block';
+  
+  document.getElementById('discordUser').textContent = identity.username;
+  
+  // Auto-fill Discord ID
+  const discordInput = document.querySelector('input[name="discord"]');
+  if (discordInput) {
+    discordInput.value = identity.discordId;
+  }
+  
+  return true;
+}
+
+checkDiscordVerification();
+
+async function submitDept(e,type){
+  e.preventDefault();
+  const identity = await mlGetIdentity();
+  
+  if (!identity || !identity.discordId) {
+    alert('You must be logged in with Discord to submit an application.');
+    window.location.href = 'login.html';
+    return;
+  }
+  
+  // Check for existing applications using new API
+  try {
+    const response = await fetch('/api/applications');
+    const data = await response.json();
+    
+    if (data.ok && data.applications) {
+      const existingApp = data.applications.find(app => 
+        ['pending', 'under_review', 'interview'].includes(app.status)
+      );
+      
+      if (existingApp) {
+        const statusText = existingApp.status.replace('_', ' ').toUpperCase();
+        alert(`❌ You already have an active application.\n\nStatus: ${statusText}\nType: ${existingApp.type}\nSubmitted: ${new Date(existingApp.created_at).toLocaleString()}\n\nPlease wait for your current application to be processed before submitting a new one.`);
+        return;
+      }
+    }
+  } catch (error) {
+    console.error('Error checking existing applications:', error);
+  }
+  
+  const f=e.target;
+  const applicationData={
+    type:type,
+    character_name:f.characterName.value,
+    steam_url:f.steam.value,
+    age:parseInt(f.age.value),
+    experience:f.experience.value,
+    backstory:f.backstory.value,
+    why_join:f.why.value,
+    department_experience:f.departmentExperience.value,
+    availability:f.availability.value
+  };
+  
+  try {
+    const submitResponse = await fetch('/api/applications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(applicationData)
+    });
+    
+    const submitData = await submitResponse.json();
+    
+    if (!submitData.ok) {
+      if (submitData.error === 'You already have an active application') {
+        const statusText = submitData.existing.status.replace('_', ' ').toUpperCase();
+        alert(`❌ You already have an active application.\n\nStatus: ${statusText}\nType: ${submitData.existing.type}\nSubmitted: ${new Date(submitData.existing.created_at).toLocaleString()}\n\nPlease wait for your current application to be processed before submitting a new one.`);
+      } else {
+        alert('Error submitting application: ' + submitData.error);
+      }
+      return;
+    }
+    
+    await mlAddNotification(identity.discordId,ML_NOTIF_TYPES.SUBMITTED,`${type} application submitted`,`Your ${type} application has been received and is awaiting staff review.`);
+    await mlCreateTicket(type,identity.discordId,f.characterName.value);
+    const r=document.getElementById("formResult");r.style.display="block";r.textContent=`Your ${type} application has been submitted successfully. Staff review is required before an interview.`;f.reset();
+  } catch (error) {
+    console.error('Error submitting application:', error);
+    alert('Error submitting application. Please try again.');
+  }
+}
+</script>
+<script src="assets/ml.js"></script>
+</body>
+</html>
