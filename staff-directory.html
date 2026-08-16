@@ -1,16 +1,28 @@
 <!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Staff Directory | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a><nav class="ml-navlinks"><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html">Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a></nav></header><main class="ml-container">
-<div class="ml-hero"><span class="ml-eyebrow">MANAGEMENT / DISCORD SYNC</span><h1>Staff Directory</h1><p>Maps a Discord ID or username to a MOON LIGHT role. A real Discord bot would populate this automatically from the server's live roles; here Management maintains it so Login can auto-detect roles.</p></div>
+<div class="ml-hero"><span class="ml-eyebrow">MANAGEMENT / DISCORD SYNC</span><h1>Staff Directory</h1><p>Maps staff Name and Discord ID to a MOON LIGHT role. A real Discord bot would populate this automatically from the server's live roles; here Management maintains it so Login can auto-detect roles.</p></div>
 <div id="lock" class="role-lock">Checking permission...</div>
 <div id="box" style="display:none;margin-top:16px">
-<div class="ml-card">
+<div class="ml-card ml-form">
 <h3>Add Mapping</h3>
-<div class="ml-grid">
-<label>Discord ID or username<input id="key" placeholder="e.g. 558939870618189834 or moonlight_player"></label>
-<label>Role<select id="roleSel"></select></label>
+<div class="form-grid">
+<div class="form-group">
+<label for="sName">Name</label>
+<input id="sName" placeholder="Staff name">
 </div>
-<button class="ml-btn primary" style="margin-top:10px" onclick="addMap()">Save Mapping</button>
+<div class="form-group">
+<label for="sId">ID</label>
+<input id="sId" placeholder="Discord ID">
 </div>
-<div class="ml-card" style="margin-top:16px"><h3>Current Mappings</h3><table class="ml-table"><tbody id="body"><tr><th>Discord ID / Username</th><th>Role</th><th></th></tr></tbody></table></div>
+<div class="form-group full">
+<label for="roleSel">Role</label>
+<select id="roleSel"></select>
+</div>
+</div>
+<div class="modal-actions" style="margin-top:10px">
+<button class="ml-btn primary" onclick="addMap()">Save Mapping</button>
+</div>
+</div>
+<div class="ml-card" style="margin-top:16px"><h3>Current Mappings</h3><table class="ml-table"><tbody id="body"><tr><th>Name</th><th>ID</th><th>Role</th><th></th></tr></tbody></table></div>
 </div>
 </main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
 <script src="assets/portal.js"></script>
@@ -30,26 +42,29 @@ async function saveRoleMap(m){return await mlSetStore(STAFF_MAP_KEY,m)}
 async function render(){
   const m=await getRoleMap();
   const keys=Object.keys(m);
-  document.getElementById("body").innerHTML=`<tr><th>Discord ID / Username</th><th>Role</th><th></th></tr>`+
-    (keys.length?keys.map(k=>`<tr><td>${mlEsc(k)}</td><td><span class="ml-pill">${mlEsc(m[k])}</span></td><td><button class="ml-btn danger" onclick="removeMap('${k.replace(/'/g,"\\'")}')">Remove</button></td></tr>`).join(""):`<tr><td colspan="3">No mappings yet.</td></tr>`);
+  document.getElementById("body").innerHTML=`<tr><th>Name</th><th>ID</th><th>Role</th><th></th></tr>`+
+    (keys.length?keys.map(k=>`<tr><td>${mlEsc(m[k].name||k)}</td><td>${mlEsc(k)}</td><td><span class="ml-pill">${mlEsc(m[k].role||m[k])}</span></td><td><button class="ml-btn danger" onclick="removeMap('${k.replace(/'/g,"\\'")}')">Remove</button></td></tr>`).join(""):`<tr><td colspan="4">No mappings yet.</td></tr>`);
 }
 
 async function addMap(){
-  const key=document.getElementById("key").value.trim().toLowerCase();
+  const name=document.getElementById("sName").value.trim();
+  const id=document.getElementById("sId").value.trim().toLowerCase();
   const role=document.getElementById("roleSel").value;
-  if(!key){alert("Enter a Discord ID or username.");return}
+  if(!name||!id){alert("Enter both Name and ID.");return}
   const m=await getRoleMap();
-  m[key]=role;
+  m[id]={name,role};
   await saveRoleMap(m);
-  await mlLog("Settings",`Discord role mapping set: ${key} → ${role}`,key,`Role: ${role}`);
-  document.getElementById("key").value="";
+  await mlLog("Settings",`Discord role mapping set: ${name} (${id}) → ${role}`,name,`Role: ${role}`);
+  document.getElementById("sName").value="";
+  document.getElementById("sId").value="";
   await render();
 }
 async function removeMap(key){
   const m=await getRoleMap();
+  const entry=m[key];
   delete m[key];
   await saveRoleMap(m);
-  await mlLog("Settings",`Discord role mapping removed`,key,"");
+  await mlLog("Settings",`Discord role mapping removed`,entry?.name||key,"");
   await render();
 }
 
