@@ -68,10 +68,8 @@ async function mlAutoRole(discordIdOrName){
   return roleMapping[oldRole]||"";
 }
 
-/* ---------- Staff Name ---------- */
-const STAFFNAME_KEY="moon_light_staff_name_v1";
-async function mlStaffName(){const d=await mlGetStore(STAFFNAME_KEY);return d||"Staff Member"}
-async function mlSetStaffName(n){return await mlSetStore(STAFFNAME_KEY,n)}
+/* ---------- Staff Name (Deprecated - now uses identity) ---------- */
+/* Removed manual staff name setting - system now uses Discord identity automatically */
 
 /* ---------- Server Status ---------- */
 const STATUS_KEY="moon_light_server_status_v1";
@@ -289,12 +287,13 @@ async function mlNotifsFor(discord){
 /* ---------- Audit Log ---------- */
 async function mlGetAudit(){const data=await mlGetStore(AUDIT_KEY);return Array.isArray(data)?data:[]}
 async function mlSaveAudit(all){return await mlSetStore(AUDIT_KEY,all)}
-async function mlStaffName(){const data=await mlGetStore(STAFFNAME_KEY);return data||"Staff Member"}
-async function mlSetStaffName(n){return await mlSetStore(STAFFNAME_KEY,n)}
 /* area should match an ML_PERMS key so the audit log can be scoped per viewer permission. */
 async function mlLog(area,action,target,details){
   const all=await mlGetAudit();
-  all.unshift({id:mlUid(),area,action,target,details,timestamp:new Date().toISOString()});
+  const identity=await mlGetIdentity();
+  const staffName=identity?.username||identity?.discordId||"Unknown Staff";
+  const role=await mlGetRoleName();
+  all.unshift({id:mlUid(),area,action,target,details,staffName,staffRole:role,timestamp:new Date().toISOString()});
   await mlSaveAudit(all);
 }
 

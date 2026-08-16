@@ -1,53 +1,327 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Audit Log | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a><nav class="ml-navlinks"><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html">Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a></nav></header><main class="ml-container">
-<div class="ml-hero"><span class="ml-eyebrow">ADMIN / AUDIT</span><h1>Audit Log</h1><p>Every staff action, who did it, what it targeted, and when. Management sees everything; Staff sees only areas they have access to.</p></div>
-<div id="lock" class="role-lock">Checking permission...</div>
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Audit Log | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"><style>
+.staff-panel-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.staff-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.staff-panel-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #f3f5fb;
+    margin: 0;
+}
+
+.staff-panel-subtitle {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.role-message {
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    font-size: 14px;
+}
+
+.role-message.granted {
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid #dc2626;
+    color: #ef4444;
+}
+
+.role-message.denied {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    color: #f87171;
+}
+
+.role-message.loading {
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid #dc2626;
+    color: #dc2626;
+}
+
+.stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+}
+
+.stat-card .number {
+    font-size: 24px;
+    font-weight: 700;
+    color: #ef4444;
+    margin-bottom: 4px;
+}
+
+.stat-card .label {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.log-card {
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+}
+
+.log-card:hover {
+    border-color: #dc2626;
+    transform: translateY(-2px);
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.log-staff {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.log-staff-avatar {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #7f1d1d, #dc2626);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+    color: #f3f5fb;
+}
+
+.log-staff-name {
+    font-weight: 600;
+    color: #f3f5fb;
+    font-size: 14px;
+}
+
+.log-role {
+    background: #7f1d1d;
+    color: #ef4444;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.log-timestamp {
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.log-id {
+    background: #080b12;
+    border: 1px solid #1d2331;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 10px;
+    color: #64748b;
+    font-family: monospace;
+}
+
+.log-action {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f3f5fb;
+    margin-bottom: 8px;
+}
+
+.log-target {
+    color: #94a3b8;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.log-target strong {
+    color: #ef4444;
+}
+
+.log-details {
+    background: #080b12;
+    border: 1px solid #1d2331;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.log-area {
+    display: inline-block;
+    background: #1e3a5f;
+    color: #60a5fa;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.filter-section {
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.filter-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.filter-row input {
+    flex: 1;
+    min-width: 200px;
+    background: #080b12;
+    border: 1px solid #252c3b;
+    color: #e4e8f1;
+    border-radius: 8px;
+    padding: 10px 12px;
+    outline: none;
+}
+
+.filter-row input:focus {
+    border-color: #dc2626;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+@media (max-width: 768px) {
+    .stats-bar {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .log-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+</style></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a><nav class="ml-navlinks"><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html">Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a></nav></header><main class="ml-container">
+<div class="staff-panel-container">
+    <div class="staff-panel-header">
+        <div>
+            <h1 class="staff-panel-title">Audit Log</h1>
+            <p class="staff-panel-subtitle">Complete system activity log - Management only access. Track all staff actions, timestamps, and role information.</p>
+        </div>
+    </div>
+<div id="lock" class="role-message loading">Checking permission...</div>
 <div id="box" style="display:none;margin-top:16px">
-<div class="ml-card">
-<input id="search" placeholder="Search staff, action, or target..." style="width:100%" oninput="render()">
-<div class="ml-actions" style="margin-top:10px" id="areaFilters">
-<span class="ml-muted">Area:</span>
-<button class="ml-btn" onclick="setArea('all')">All</button><button class="ml-btn" onclick="setArea('Applications')">Applications</button><button class="ml-btn" onclick="setArea('Police')">Police</button><button class="ml-btn" onclick="setArea('EMS')">EMS</button><button class="ml-btn" onclick="setArea('Streamers')">Streamers</button><button class="ml-btn" onclick="setArea('Settings')">Settings</button>
+
+<div class="stats-bar" id="statsBar">
+    <div class="stat-card">
+        <div class="number" id="totalLogs">0</div>
+        <div class="label">Total Actions</div>
+    </div>
+    <div class="stat-card">
+        <div class="number" id="todayLogs">0</div>
+        <div class="label">Today</div>
+    </div>
+    <div class="stat-card">
+        <div class="number" id="staffCount">0</div>
+        <div class="label">Active Staff</div>
+    </div>
+    <div class="stat-card">
+        <div class="number" id="roleCount">0</div>
+        <div class="label">Roles Active</div>
+    </div>
+</div>
+
+<div class="filter-section">
+    <div class="filter-row">
+        <input id="search" placeholder="Search by staff name, action, or target..." oninput="render()">
+    </div>
+    <div class="filter-buttons" id="areaFilters">
+        <span class="ml-muted">Filter by Area:</span>
+        <button class="ml-btn" onclick="setArea('all')">All Areas</button>
+        <button class="ml-btn" onclick="setArea('Applications')">Applications</button>
+        <button class="ml-btn" onclick="setArea('Police')">Police</button>
+        <button class="ml-btn" onclick="setArea('EMS')">EMS</button>
+        <button class="ml-btn" onclick="setArea('Streamers')">Streamers</button>
+        <button class="ml-btn" onclick="setArea('Settings')">Settings</button>
+        <button class="ml-btn" onclick="setArea('Management')">Management</button>
+    </div>
+</div>
+
+<div id="list"></div>
 </div>
 </div>
-<div id="list" style="margin-top:16px"></div>
-</div>
-</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
-<script src="assets/portal.js"></script>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer><script src="assets/portal.js"></script>
 <script>
 const lock=document.getElementById("lock"), box=document.getElementById("box");
 let areaFilter="all", search="";
 
-async function visibleAreas(){
-  const role=await mlRole();
-  if(role==="Management")return["Applications","Police","EMS","Streamers","Settings"];
-  const a=[];
-  if(await mlHasPerm("Applications"))a.push("Applications");
-  if(await mlHasPerm("Police"))a.push("Police");
-  if(await mlHasPerm("EMS"))a.push("EMS");
-  if(await mlHasPerm("Streamers"))a.push("Streamers");
-  if(await mlHasPerm("Settings"))a.push("Settings");
-  return a;
+async function checkAccess(){
+  try{
+    const role=await mlRole();
+    const roleName=await mlGetRoleName();
+    
+    // Only Management can access audit log
+    if(role==="Management" || roleName==="Management" || await mlHasPerm("Management")){
+      lock.className="role-message granted";
+      lock.innerHTML="Management access granted. Full audit log access enabled.";
+      box.style.display="block";
+      return true;
+    }
+    
+    lock.className="role-message denied";
+    lock.innerHTML="Access denied. Audit log is restricted to Management only. Your role: <b>" + (roleName||"No staff role") + "</b>";
+    box.style.display="none";
+    return false;
+  }catch(e){
+    console.error("Error in checkAccess:",e);
+    lock.className="role-message denied";
+    lock.innerHTML="Error checking access: " + e.message;
+    box.style.display="none";
+    return false;
+  }
 }
 
-async function checkAccess(){
-  const areas=await visibleAreas();
-  const role=await mlRole();
-  if(areas.length){
-    lock.className="role-ok";
-    lock.innerHTML=`Access granted — scoped to: ${areas.join(", ")}. Your role: <b>${role||"No staff role"}</b>`;
-    box.style.display="block";
-    return true;
-  }
-  lock.innerHTML=`Access denied. Your role has no audit-log access. Your role: <b>${role||"No staff role"}</b>`;
-  box.style.display="none";
-  return false;
-}
 function setArea(a){areaFilter=a;render()}
 
 async function render(){
   if(!(await checkAccess()))return;
   search=document.getElementById("search").value.trim().toLowerCase();
-  const areas=await visibleAreas();
   
   // Fetch audit logs from server
   let rows=[];
@@ -61,20 +335,104 @@ async function render(){
     console.error("Error fetching audit logs:",e);
   }
   
-  rows=rows.filter(e=>areas.includes(e.area));
+  // Filter by area
   if(areaFilter!=="all")rows=rows.filter(e=>e.area===areaFilter);
-  if(search)rows=rows.filter(e=>(e.discord_username||"").toLowerCase().includes(search)||(e.action||"").toLowerCase().includes(search)||(e.target||"").toLowerCase().includes(search));
+  
+  // Filter by search
+  if(search)rows=rows.filter(e=>(e.staffName||"").toLowerCase().includes(search)||(e.action||"").toLowerCase().includes(search)||(e.target||"").toLowerCase().includes(search));
+  
+  // Update stats
+  updateStats(rows);
+  
   const list=document.getElementById("list");
-  if(!rows.length){list.innerHTML=`<div class="ml-card">No matching audit entries.</div>`;return}
-  list.innerHTML=`<table class="ml-table"><tbody>
-    <tr><th>Staff Member</th><th>Action</th><th>Target</th><th>Date</th><th>Time</th><th>Details</th></tr>
-    ${rows.map(e=>`<tr><td>${mlEsc(e.discord_username)}</td><td>${mlEsc(e.action)}</td><td>${mlEsc(e.target||"—")}</td><td>${mlDate(e.created_at)}</td><td>${mlTime(e.created_at)}</td><td>${mlEsc(e.details||"—")}</td></tr>`).join("")}
-  </tbody></table>`;
+  if(!rows.length){
+    list.innerHTML=`<div class="log-card" style="text-align:center;color:#94a3b8">No matching audit entries found.</div>`;
+    return;
+  }
+  
+  // Sort by timestamp (newest first)
+  rows.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  
+  list.innerHTML=rows.map(e=>createLogCard(e)).join("");
+}
+
+function createLogCard(e){
+  const timestamp=e.timestamp?new Date(e.timestamp):new Date();
+  const timeStr=timestamp.toLocaleString();
+  const areaColor=getAreaColor(e.area);
+  const staffInitials=(e.staffName||"Unknown").split(" ").map(n=>n[0]).join("").substring(0,2).toUpperCase();
+  
+  return `
+    <div class="log-card">
+        <div class="log-header">
+            <div class="log-staff">
+                <div class="log-staff-avatar">${staffInitials}</div>
+                <div>
+                    <div class="log-staff-name">${mlEsc(e.staffName||"Unknown")}</div>
+                    <span class="log-role">${mlEsc(e.staffRole||"Staff")}</span>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+                <div class="log-timestamp">${timeStr}</div>
+                <span class="log-id">ID: ${mlEsc(e.id||"N/A")}</span>
+            </div>
+        </div>
+        <div class="log-action">
+            <span class="log-area" style="background:${areaColor}">${mlEsc(e.area||"System")}</span>
+            ${mlEsc(e.action||"Unknown action")}
+        </div>
+        ${e.target?`<div class="log-target">Target: <strong>${mlEsc(e.target)}</strong></div>`:""}
+        ${e.details?`<div class="log-details">${mlEsc(e.details)}</div>`:""}
+    </div>
+  `;
+}
+
+function getAreaColor(area){
+  const colors={
+    "Applications":"#1e3a5f",
+    "Police":"#1e3a5f", 
+    "EMS":"#1e3a5f",
+    "Streamers":"#1e3a5f",
+    "Settings":"#1e3a5f",
+    "Management":"#7f1d1d"
+  };
+  return colors[area]||"#7f1d1d";
+}
+
+function updateStats(rows){
+  const totalLogs=rows.length;
+  const today=new Date().toDateString();
+  const todayLogs=rows.filter(e=>e.timestamp && new Date(e.timestamp).toDateString()===today).length;
+  const uniqueStaff=new Set(rows.map(e=>e.staffName)).size;
+  const uniqueRoles=new Set(rows.map(e=>e.staffRole)).size;
+  
+  document.getElementById("totalLogs").textContent=totalLogs;
+  document.getElementById("todayLogs").textContent=todayLogs;
+  document.getElementById("staffCount").textContent=uniqueStaff;
+  document.getElementById("roleCount").textContent=uniqueRoles;
 }
 
 function mlDate(d){if(!d)return"—";try{return new Date(d).toLocaleDateString()}catch(e){return d}}
 function mlTime(d){if(!d)return"—";try{return new Date(d).toLocaleTimeString()}catch(e){return d}}
 
-render();
+(async function initAuditLog(){
+  try{
+    await render();
+  }catch(e){
+    console.error("Error initializing audit log:",e);
+    lock.className="role-message denied";
+    lock.innerHTML="Error loading audit log: " + e.message + ". Please refresh the page.";
+    box.style.display="none";
+  }
+})();
+
+// Add timeout to detect hanging
+setTimeout(() => {
+  if(lock.textContent === "Checking permission..."){
+    console.error("Audit log initialization timed out");
+    lock.className="role-message denied";
+    lock.innerHTML="Audit log loading timed out. Please refresh the page.";
+  }
+}, 10000); // 10 second timeout
 </script>
 </body></html>

@@ -60,20 +60,19 @@
 <div id="lock" class="role-message loading">Checking permission...</div>
 <div id="box" style="display:none;margin-top:16px">
 
-<div class="ml-card">
-<h3>Staff Identity</h3>
-<p class="ml-muted">Your staff name for system attribution.</p>
-<label>Your staff name<input id="staffName" style="background:#080b12;color:#e4e8f1;border:1px solid #252c3b;padding:11px;border-radius:8px;width:100%;box-sizing:border-box;"></label>
-<button class="ml-btn primary" onclick="saveStaffName()">Save</button>
-</div>
-
-<div class="ml-card" style="margin-top:16px">
+<div class="ml-card ml-form" style="margin-top:16px">
 <h3>FiveM Server Status</h3>
 <p class="ml-muted">Server status information displayed on the homepage.</p>
-<div class="ml-grid">
+<div class="form-grid">
+<div class="form-group">
 <label>Status<select id="svOnline"><option value="true">Online</option><option value="false">Offline</option></select></label>
+</div>
+<div class="form-group">
 <label>Current Players<input id="svPlayers" type="number" min="0"></label>
+</div>
+<div class="form-group">
 <label>Max Players<input id="svMax" type="number" min="1"></label>
+</div>
 </div>
 <button class="ml-btn primary" onclick="saveServerStatus()">Update Status</button>
 <p class="ml-muted" id="lastSync" style="margin-top:8px"></p>
@@ -93,27 +92,26 @@
 <script src="assets/portal.js"></script>
 <script>
 const lock=document.getElementById("lock"), box=document.getElementById("box");
-if(mlRoleGate(lock,box,"Settings","Management")){
-  lock.className="role-message granted";
-  lock.innerHTML="Settings access granted. Management controls available.";
-  document.getElementById("staffName").value=mlStaffName();
-  const s=mlGetServerStatus();
-  document.getElementById("svOnline").value=String(s.online);
-  document.getElementById("svPlayers").value=s.players;
-  document.getElementById("svMax").value=s.maxPlayers;
-  document.getElementById("lastSync").textContent="Last updated: "+mlFmt(s.lastSync);
-}
+(async function initSettings(){
+  if(mlRoleGate(lock,box,"Settings","Management")){
+    lock.className="role-message granted";
+    lock.innerHTML="Settings access granted. Management controls available.";
+    try{
+      const s=mlGetServerStatus();
+      document.getElementById("svOnline").value=String(s.online);
+      document.getElementById("svPlayers").value=s.players;
+      document.getElementById("svMax").value=s.maxPlayers;
+      document.getElementById("lastSync").textContent="Last updated: "+mlFmt(s.lastSync);
+    }catch(e){
+      console.error("Error loading settings:",e);
+    }
+  }
+})();
 
-function saveStaffName(){
-  const n=document.getElementById("staffName").value.trim()||"Moon Light Staff";
-  mlSetStaffName(n);
-  mlLog("Settings","Staff name updated",n,"");
-  alert("Saved.");
-}
-function saveServerStatus(){
+async function saveServerStatus(){
   const s={online:document.getElementById("svOnline").value==="true",players:Number(document.getElementById("svPlayers").value)||0,maxPlayers:Number(document.getElementById("svMax").value)||1};
-  mlSaveServerStatus(s);
-  mlLog("Settings",`Server status updated`,s.online?"Online":"Offline",`${s.players}/${s.maxPlayers} players`);
+  await mlSaveServerStatus(s);
+  await mlLog("Settings",`Server status updated`,s.online?"Online":"Offline",`${s.players}/${s.maxPlayers} players`);
   document.getElementById("lastSync").textContent="Last updated: "+mlFmt(mlGetServerStatus().lastSync);
   alert("Server status updated.");
 }
