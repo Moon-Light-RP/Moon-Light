@@ -303,9 +303,18 @@ async function syncDiscordSession(){
 })();
 
 async function doLogout(){
+  // Important: clear the locally-stored identity WHILE the Discord session is
+  // still valid (mlClearIdentity -> DELETE /api/store requires an authenticated
+  // session). If we clear the session first, this call gets rejected with 401
+  // and throws, which used to stop execution before the UI ever updated —
+  // making the button look broken even though the server-side logout worked.
+  try{await mlClearIdentity();}catch(error){}
   try{await fetch(`/auth/logout`);}catch(error){}
-  await mlClearIdentity();
-  await refresh();
+  cachedRoleId=null;
+  cachedPermissions=null;
+  // Full reload guarantees every cached bit of client state (role cache,
+  // nav links, etc.) resets cleanly instead of relying on refresh() alone.
+  window.location.href="login.html";
 }
 </script>
 </body></html>
