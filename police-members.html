@@ -87,11 +87,30 @@
 <script>
 const DEPT="POLICE";
 const lock=document.getElementById("lock"), box=document.getElementById("box");
-if(mlRoleGate(lock,box,"Police","Police Cmd")){
-  lock.className="role-message granted";
-  lock.innerHTML="Police Members access granted.";
-  render();
-}
+
+(async function initPoliceMembers(){
+  try{
+    if(await mlRoleGate(lock,box,"Police","Police Cmd")){
+      lock.className="role-message granted";
+      lock.innerHTML="Police Members access granted.";
+      render();
+    }
+  }catch(e){
+    console.error("Error initializing police members:",e);
+    lock.className="role-message denied";
+    lock.innerHTML="Error loading police members: " + e.message + ". Please refresh the page.";
+    box.style.display="none";
+  }
+})();
+
+// Add timeout to detect hanging
+setTimeout(() => {
+  if(lock.textContent === "Checking staff permissions..."){
+    console.error("Police members initialization timed out");
+    lock.className="role-message denied";
+    lock.innerHTML="Police members loading timed out. Please refresh the page.";
+  }
+}, 10000); // 10 second timeout
 
 function render(){
   const members=mlDeptMembers(DEPT);

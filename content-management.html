@@ -83,14 +83,37 @@
 <script>
 const lock=document.getElementById("lock"), box=document.getElementById("box");
 let tab="rules";
-if(mlRoleGate(lock,box,"Settings","Management")){
-  lock.className="role-message granted";
-  lock.innerHTML="Content Management access granted. Management controls available.";
-  render();
-}
+
+(async function initContentManagement(){
+  try{
+    if(await mlRoleGate(lock,box,"Settings","Management")){
+      lock.className="role-message granted";
+      lock.innerHTML="Content Management access granted. Management controls available.";
+      render();
+    }
+  }catch(e){
+    console.error("Error initializing content management:",e);
+    lock.className="role-message denied";
+    lock.innerHTML="Error loading content management: " + e.message + ". Please refresh the page.";
+    box.style.display="none";
+  }
+})();
+
+// Add timeout to detect hanging
+setTimeout(() => {
+  if(lock.textContent === "Checking permission..."){
+    console.error("Content management initialization timed out");
+    lock.className="role-message denied";
+    lock.innerHTML="Content management loading timed out. Please refresh the page.";
+  }
+}, 10000); // 10 second timeout
 
 function setTab(t){tab=t;["rules","faq","ann"].forEach(x=>document.getElementById(x+"Tab").style.display=x===t?"block":"none");render()}
-setTab("rules");
+
+// Set initial tab after DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  setTab("rules");
+});
 
 function render(){
   const c=mlGetContent();

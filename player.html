@@ -1,39 +1,181 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Player Dashboard | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Player Dashboard | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"><style>
+.staff-panel-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.staff-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.staff-panel-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #f3f5fb;
+    margin: 0;
+}
+
+.staff-panel-subtitle {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.player-card {
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: all 0.2s ease;
+}
+
+.player-card:hover {
+    border-color: #dc2626;
+    transform: translateY(-2px);
+}
+
+.player-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #1d2331;
+}
+
+.player-stat:last-child {
+    border-bottom: none;
+}
+
+.player-stat-label {
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.player-stat-value {
+    color: #f3f5fb;
+    font-weight: 600;
+}
+
+.profile-section {
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #f3f5fb;
+    margin-bottom: 16px;
+}
+
+.notification-item {
+    background: #080b12;
+    border: 1px solid #1d2331;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+}
+
+.notification-type {
+    display: inline-block;
+    background: #7f1d1d;
+    color: #ef4444;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.notification-title {
+    color: #f3f5fb;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.notification-body {
+    color: #94a3b8;
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.notification-date {
+    color: #64748b;
+    font-size: 11px;
+}
+</style></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
     <nav class="ml-navlinks">
-    <a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html" class="active">My Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a>
+    <a href="index.html">Home</a><a href="rules.html">Rules</a><a href="faq.html">FAQ</a><a href="application.html">Application</a><a href="player.html" class="active">My Dashboard</a><a href="login.html">Login</a>
     </nav></header><main class="ml-container">
-<div class="ml-hero"><span class="ml-eyebrow">PLAYER PORTAL</span><h1 id="welcome">Welcome back, Player.</h1><p>Track your profile, applications, interviews, and account status from one place.</p></div>
+<div class="staff-panel-container">
+    <div class="staff-panel-header">
+        <div>
+            <h1 class="staff-panel-title" id="welcome">Welcome back, Player.</h1>
+            <p class="staff-panel-subtitle">Track your profile, applications, interviews, and account status from one place.</p>
+        </div>
+    </div>
 
-<div id="noProfile" class="ml-alert" style="display:none">You haven't linked a Discord username yet, so we're showing your most recent local submission. <a href="profile.html" style="color:#ef4444;text-decoration:underline">Set up your profile</a> to always see the right applications.</div>
+<div id="noProfile" class="player-card" style="display:none">You haven't linked a Discord username yet, so we're showing your most recent local submission. <a href="profile.html" style="color:#ef4444;text-decoration:underline">Set up your profile</a> to always see the right applications.</div>
 
-<section class="ml-grid">
- <article class="ml-card" style="border-color:#dc2626"><h3>My Profile</h3>
-   <p><b id="pName">—</b></p>
-   <p class="ml-muted" id="pDiscord">Discord: —</p>
-   <p class="ml-muted" id="pSteam">Steam: —</p>
-   <p class="ml-muted" id="pLinked">Discord account: not linked</p>
-   <div class="ml-actions"><a class="ml-btn primary" href="profile.html">Edit Profile</a></div>
- </article>
- <article class="ml-card" style="border-color:#dc2626"><h3>Account Status</h3>
-   <p id="acctStatus" style="font-weight:700">—</p>
-   <p class="ml-muted" id="acctMember">Member since: —</p>
-   <span class="ml-pill">Live Preview</span>
- </article>
- <article class="ml-card" style="border-color:#dc2626"><h3>Departments</h3>
-   <p id="acctDepts">No accepted department yet.</p>
-   <span class="ml-pill">Progression</span>
- </article>
-</section>
+<div class="profile-section">
+    <h3 class="section-title">My Profile</h3>
+    <div class="player-stat">
+        <span class="player-stat-label">Name</span>
+        <span class="player-stat-value" id="pName">—</span>
+    </div>
+    <div class="player-stat">
+        <span class="player-stat-label">Discord</span>
+        <span class="player-stat-value" id="pDiscord">—</span>
+    </div>
+    <div class="player-stat">
+        <span class="player-stat-label">Steam</span>
+        <span class="player-stat-value" id="pSteam">—</span>
+    </div>
+    <div class="player-stat">
+        <span class="player-stat-label">Discord Account</span>
+        <span class="player-stat-value" id="pLinked">Not linked</span>
+    </div>
+    <div style="margin-top:16px">
+        <a class="ml-btn primary" href="profile.html">Edit Profile</a>
+    </div>
+</div>
 
-<section style="margin-top:20px">
- <div class="ml-hero" style="padding:0 0 14px"><span class="ml-eyebrow">MY APPLICATIONS</span><h2 style="margin:6px 0 0">Application & Interview Status</h2></div>
- <div id="appsGrid" class="ml-grid"></div>
-</section>
+<div class="profile-section">
+    <h3 class="section-title">Account Status</h3>
+    <div class="player-stat">
+        <span class="player-stat-label">Status</span>
+        <span class="player-stat-value" id="acctStatus">—</span>
+    </div>
+    <div class="player-stat">
+        <span class="player-stat-label">Member Since</span>
+        <span class="player-stat-value" id="acctMember">—</span>
+    </div>
+    <div class="player-stat">
+        <span class="player-stat-label">Departments</span>
+        <span class="player-stat-value" id="acctDepts">No accepted department yet.</span>
+    </div>
+</div>
 
-<section class="ml-card" style="margin-top:20px;border-color:#dc2626"><h3>Notifications</h3><div id="notifications"></div></section>
+<div class="profile-section">
+    <h3 class="section-title">My Applications</h3>
+    <div id="appsGrid"></div>
+</div>
 
-</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
-<script src="assets/portal.js"></script>
+<div class="profile-section">
+    <h3 class="section-title">Notifications</h3>
+    <div id="notifications"></div>
+</div>
+</div>
+</main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer><script src="assets/portal.js"></script>
 <script>
 function getProfile(){try{return JSON.parse(localStorage.getItem("moon_light_profile_v1")||"{}")}catch(e){return{}}}
 function deptLabel(t){return t==="CIVILIAN"?"Civilian":t==="POLICE"?"Police":t==="EMS"?"EMS":(t||"Unknown")}
@@ -53,15 +195,15 @@ if(myDiscord){
 /* Profile card */
 document.getElementById("welcome").textContent=`Welcome back, ${profile.displayName||"Player"}.`;
 document.getElementById("pName").textContent=profile.displayName||"Unnamed Player";
-document.getElementById("pDiscord").textContent="Discord: "+(profile.discordUser||"—");
-document.getElementById("pSteam").textContent="Steam: "+(profile.steamProfile||"—");
+document.getElementById("pDiscord").textContent=profile.discordUser||"—";
+document.getElementById("pSteam").textContent=profile.steamProfile||"—";
 const identity=mlGetIdentity();
-document.getElementById("pLinked").textContent=identity?`Discord account: linked (${identity.username})`:"Discord account: not linked — sign in via Login to link it";
+document.getElementById("pLinked").textContent=identity?`Linked (${identity.username})`:"Not linked — sign in via Login to link it";
 
 /* Account status card */
 if(myApps.length){
   const earliest=myApps.map(a=>a.submitted).filter(Boolean).sort()[0];
-  document.getElementById("acctMember").textContent="Member since: "+(earliest||"—");
+  document.getElementById("acctMember").textContent=earliest||"—";
   const anyAccepted=myApps.some(a=>a.status==="accepted");
   const anyPending=myApps.some(a=>a.status==="pending"||a.status==="interview");
   document.getElementById("acctStatus").textContent=anyAccepted?"Active — at least one accepted application":anyPending?"Application(s) in progress":"No active applications";
@@ -74,10 +216,10 @@ document.getElementById("acctDepts").textContent=accepted.length?accepted.join("
 /* Applications grid */
 const grid=document.getElementById("appsGrid");
 if(!myApps.length){
-  grid.innerHTML=`<div class="ml-card" style="grid-column:1/-1">
+  grid.innerHTML=`<div class="player-card" style="text-align:center">
     <h3>No applications yet</h3>
     <p class="ml-muted">Start your story at MOON LIGHT — apply to join, or apply directly to a department.</p>
-    <div class="ml-actions"><a class="ml-btn primary" href="application.html">Civilian Application</a><a class="ml-btn" href="police-application.html">Police Application</a><a class="ml-btn" href="ems-application.html">EMS Application</a></div>
+    <div style="margin-top:16px"><a class="ml-btn primary" href="application.html">Civilian Application</a><a class="ml-btn" href="police-application.html">Police Application</a><a class="ml-btn" href="ems-application.html">EMS Application</a></div>
   </div>`;
 }else{
   grid.innerHTML=myApps.map(a=>{
@@ -93,25 +235,32 @@ if(!myApps.length){
     }else{
       interviewHtml=`<p><b>Interview:</b> Not scheduled</p>`;
     }
-    return `<article class="ml-card" style="border-color:#dc2626">
-      <div class="app-meta"><span class="ml-pill">${mlEsc(dept)}</span><span class="ml-status ${a.status||"pending"}">${mlEsc(a.status||"pending")}</span></div>
+    return `<div class="player-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span class="ml-pill">${mlEsc(dept)}</span>
+        <span class="ml-status ${a.status||"pending"}">${mlEsc(a.status||"pending")}</span>
+      </div>
       <h3 style="margin-top:8px">${mlEsc(dept)} Application</h3>
       <p class="ml-muted">Submitted ${mlEsc(a.submitted||"—")}</p>
       ${interviewHtml}
-      <div class="ml-actions"><a class="ml-btn primary" href="${applyLink(a.type)}">View / Update</a></div>
-    </article>`;
+      <div style="margin-top:12px"><a class="ml-btn primary" href="${applyLink(a.type)}">View / Update</a></div>
+    </div>`;
   }).join("");
 }
 
-/* Notifications — real event log (Application Submitted/Approved/Rejected, Interview Scheduled/Result, Department Accepted, Staff Announcement) */
+/* Notifications */
 const notifBox=document.getElementById("notifications");
 const myNotifs=myDiscord?mlNotifsFor(myDiscord):(allApps.length?mlNotifsFor(allApps[allApps.length-1].discord):mlGetNotifs().filter(n=>n.toDiscord===null));
 if(!myNotifs.length){
-  notifBox.innerHTML=`<div class="ml-alert">No new notifications.</div>`;
+  notifBox.innerHTML=`<div class="player-card" style="text-align:center;color:#94a3b8">No new notifications.</div>`;
 }else{
-  notifBox.innerHTML=myNotifs.slice(0,20).map(n=>`<div class="ml-alert"><span class="ml-pill">${mlEsc(n.type)}</span><br><b>${mlEsc(n.title)}</b><br>${mlEsc(n.body)}<br><span class="ml-muted">${mlFmt(n.date)}</span></div>`).join("");
+  notifBox.innerHTML=myNotifs.slice(0,20).map(n=>`<div class="notification-item">
+    <span class="notification-type">${mlEsc(n.type)}</span>
+    <div class="notification-title">${mlEsc(n.title)}</div>
+    <div class="notification-body">${mlEsc(n.body)}</div>
+    <div class="notification-date">${mlFmt(n.date)}</div>
+  </div>`).join("");
 }
 </script>
 </body>
 </html>
-
