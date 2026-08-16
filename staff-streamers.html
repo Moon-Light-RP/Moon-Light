@@ -60,4 +60,5 @@ function addStreamer(){
 function toggleLive(i){const s=mlGetStreamers();s[i].live=!s[i].live;mlSaveStreamers(s);mlLog("Streamers",`Streamer marked ${s[i].live?"live":"offline"}`,s[i].name,"");render()}
 function removeStreamer(i){const s=mlGetStreamers();const r=s.splice(i,1)[0];mlSaveStreamers(s);mlLog("Streamers","Streamer removed",r?.name||"","");render()}
 </script>
+<script src="assets/analytics.js"></script>
 </body></html>

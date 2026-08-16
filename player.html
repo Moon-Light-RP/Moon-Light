@@ -112,6 +112,7 @@ if(!myNotifs.length){
   notifBox.innerHTML=myNotifs.slice(0,20).map(n=>`<div class="ml-alert"><span class="ml-pill">${mlEsc(n.type)}</span><br><b>${mlEsc(n.title)}</b><br>${mlEsc(n.body)}<br><span class="ml-muted">${mlFmt(n.date)}</span></div>`).join("");
 }
 </script>
+<script src="assets/analytics.js"></script>
 </body>
 </html>
 

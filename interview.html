@@ -92,4 +92,5 @@ function renderHistory(){
   el.innerHTML=`<table class="ml-table"><tbody><tr><th>Date</th><th>Interviewer</th><th>Result</th><th>Notes</th></tr>${hist.map(h=>`<tr><td>${mlFmt(h.date)}</td><td>${mlEsc(h.interviewer)}</td><td><span class="ml-status ${h.result==="passed"?"accepted":"rejected"}">${mlEsc(h.result)}</span></td><td>${mlEsc(h.notes||"—")}</td></tr>`).join("")}</tbody></table>`;
 }
 </script>
+<script src="assets/analytics.js"></script>
 </body></html>
