@@ -81,16 +81,6 @@
 const lock=document.getElementById("lock"), box=document.getElementById("box");
 let statusFilter="all", deptFilter="all", searchTerm="";
 
-/* Role IDs for flexibility */
-const ML_ROLE_IDS={
-  MANAGEMENT:"MANAGEMENT_ROLE_ID",
-  ADMINISTRATOR:"ADMINISTRATOR_ROLE_ID",
-  MODERATOR:"MODERATOR_ROLE_ID",
-  SUPPORT:"SUPPORT_ROLE_ID",
-  POLICE_MANAGEMENT:"POLICE_MANAGEMENT_ROLE_ID",
-  EMS_MANAGEMENT:"EMS_MANAGEMENT_ROLE_ID"
-};
-
 // Also check role name for Management
 async function isManagement(){
   try{
@@ -118,7 +108,7 @@ async function allowedDepts(){
     console.log('allowedDepts:', { roleId, roleName, identity });
     
     // Management gets everything
-    if(roleId===ML_ROLE_IDS.MANAGEMENT || roleName==="Management" || await isManagement()){
+    if(roleName==="Management" || await isManagement()){
       console.log('Management role detected, returning all departments');
       return["CIVILIAN","POLICE","EMS"];
     }
