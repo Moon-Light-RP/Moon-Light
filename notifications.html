@@ -15,5 +15,9 @@ const list=myDiscord?mlNotifsFor(myDiscord):(all.length?mlNotifsFor(all[all.leng
 const box=document.getElementById("notifList");
 box.innerHTML=list.length?list.map(n=>`<div class="ml-alert"><span class="ml-pill">${mlEsc(n.type)}</span><br><b>${mlEsc(n.title)}</b><br>${mlEsc(n.body)}<br><span class="ml-muted">${mlFmt(n.date)}</span></div>`).join(""):`<div class="ml-alert">No notifications yet. Submit an application or check back after staff review your case.</div>`;
 </script>
+<script>
+window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
 </body>
 </html>

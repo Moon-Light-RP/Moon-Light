@@ -22,5 +22,9 @@ const identity=mlGetIdentity();
 document.getElementById("linkStatus").textContent=identity?`Linked to Discord as ${identity.username}${identity.discordId?` (ID: ${identity.discordId})`:""}. Detected role: ${mlRole()||"Player"}.`:"No Discord account linked yet.";
 </script>
 <script src="assets/ml.js"></script>
+<script>
+window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
 </body>
 </html>
