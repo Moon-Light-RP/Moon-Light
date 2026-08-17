@@ -36,9 +36,8 @@ async function mlSetIdentity(id){return await mlSetStore(IDENTITY_KEY,id)}
 async function mlClearIdentity(){return await mlDeleteStore(IDENTITY_KEY)}
 
 /* ---------- Auto Role Lookup ---------- */
-const STAFF_KEY="moon_light_discord_role_map_v1";
 async function mlAutoRole(discordIdOrName){
-  // Try to get role from server first (new system)
+  // Get role from server (new table-based system only)
   try{
     const response=await fetch("/api/auth/role");
     if(response.ok){
@@ -51,21 +50,7 @@ async function mlAutoRole(discordIdOrName){
     console.error("Failed to fetch role from server:",e);
   }
   
-  // Fallback to old key-value store
-  const map=await mlGetStore(STAFF_KEY)||{};
-  const k=(discordIdOrName||"").toLowerCase();
-  const oldRole=map[k]||map[discordIdOrName]||"";
-  
-  // Map old role names to new role IDs
-  const roleMapping={
-    'Management':'MANAGEMENT_ROLE_ID',
-    'Staff':'MODERATOR_ROLE_ID',
-    'Police Cmd':'POLICE_MANAGEMENT_ROLE_ID',
-    'EMS Cmd':'EMS_MANAGEMENT_ROLE_ID',
-    'Streamer Manager':'ADMINISTRATOR_ROLE_ID'
-  };
-  
-  return roleMapping[oldRole]||"";
+  return "";
 }
 
 /* ---------- Staff Name (Deprecated - now uses identity) ---------- */

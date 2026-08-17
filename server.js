@@ -222,13 +222,12 @@ async function supabaseRequest(endpoint, options = {}) {
 
   if (!response.ok) {
     // For 404 errors on table lookups, return null instead of throwing
-    // This allows fallback mechanisms to work
     // BUGFIX: this used to check the Node.js `path` module (require('path')),
     // not the `endpoint` string that was actually requested — `path.includes`
     // doesn't exist on that module, so this threw a TypeError on every single
-    // non-OK Supabase response instead of gracefully falling back.
+    // non-OK Supabase response instead of gracefully handling missing tables.
     if (response.status === 404 && (endpoint.includes('staff_roles') || endpoint.includes('role_definitions') || endpoint.includes('permissions'))) {
-      console.log(`Table not found (404) for endpoint: ${endpoint}, returning null for fallback`);
+      console.log(`Table not found (404) for endpoint: ${endpoint}, returning null`);
       return null;
     }
     
@@ -533,26 +532,13 @@ app.put('/api/applications/:id/status', requireDiscordUser, async (req, res) => 
 // Helper function to get user role (returns highest priority role if multiple)
 async function getUserRole(discordId) {
   try {
-    // Try new table-based system first
-    let staffRoles;
-    try {
-      staffRoles = await supabaseRequest(`staff_roles?discord_id=eq.${discordId}&select=role_id`);
-    } catch (e) {
-      // Table doesn't exist, use fallback
-      console.log('New tables not found, using fallback');
-      staffRoles = null;
-    }
+    // Use table-based system only
+    const staffRoles = await supabaseRequest(`staff_roles?discord_id=eq.${discordId}&select=role_id`);
     
     if (staffRoles && staffRoles.length > 0) {
       // If user has multiple roles, get the one with highest priority
       const roleIds = staffRoles.map(r => r.role_id);
-      let roleDefs;
-      try {
-        roleDefs = await supabaseRequest(`role_definitions?id=in.(${roleIds.join(',')})&select=id,name,priority`);
-      } catch (e) {
-        console.log('role_definitions table not found, using fallback');
-        roleDefs = null;
-      }
+      const roleDefs = await supabaseRequest(`role_definitions?id=in.(${roleIds.join(',')})&select=id,name,priority`);
       
       if (roleDefs && roleDefs.length > 0) {
         // Sort by priority (highest first) and return the first
@@ -561,47 +547,8 @@ async function getUserRole(discordId) {
       }
     }
     
-    // Fallback to old key-value store if tables don't exist
-    console.log('Falling back to key-value store for role lookup');
-    const roleMapData = await supabaseRequest('ml_store?key=eq.moon_light_discord_role_map_v1');
-    const roleMapRecord = Array.isArray(roleMapData) && roleMapData.length > 0 ? roleMapData[0] : null;
-    
-    console.log('Role map data:', { hasData: !!roleMapRecord, keys: roleMapRecord ? Object.keys(roleMapRecord) : [] });
-    
-    let roleMap = {};
-    if (roleMapRecord && roleMapRecord.value) {
-      try {
-        roleMap = typeof roleMapRecord.value === 'string' ? JSON.parse(roleMapRecord.value) : roleMapRecord.value;
-        console.log('Parsed role map keys:', Object.keys(roleMap));
-      } catch (e) {
-        console.error('Failed to parse role map:', e);
-      }
-    }
-    
-    const userRole = roleMap[discordId.toLowerCase()] || '';
-    console.log('User role from map:', userRole, 'for discordId:', discordId);
-    
-    // SECURITY: Do not use fallback role map for sensitive roles like Management
-    // Only allow Management from table-based system to prevent unauthorized access
-    const roleMapping = {
-      'Management': 'MANAGEMENT_ROLE_ID',
-      'Staff': 'MODERATOR_ROLE_ID',
-      'Police Cmd': 'POLICE_MANAGEMENT_ROLE_ID',
-      'EMS Cmd': 'EMS_MANAGEMENT_ROLE_ID',
-      'Streamer Manager': 'ADMINISTRATOR_ROLE_ID'
-    };
-    
-    const mappedRole = roleMapping[userRole] || 'PLAYER';
-    
-    // SECURITY CHECK: If fallback gives Management, default to PLAYER for security
-    if (mappedRole === 'MANAGEMENT_ROLE_ID') {
-      console.warn('SECURITY: Attempted to assign Management role from fallback. Defaulting to PLAYER for security.');
-      return 'PLAYER';
-    }
-    
-    console.log('Mapped role:', mappedRole);
-    
-    return mappedRole;
+    // Default to PLAYER if no role found
+    return 'PLAYER';
   } catch (error) {
     console.error('Error getting user role:', error);
     return 'PLAYER';
@@ -614,27 +561,13 @@ async function getUserRoleName(discordId) {
     const roleId = await getUserRole(discordId);
     if (roleId === 'PLAYER') return 'Player';
     
-    // Try to get name from role_definitions
-    try {
-      const roleDef = await supabaseRequest(`role_definitions?id=eq.${roleId}&select=name`);
-      if (roleDef && roleDef.length > 0) {
-        return roleDef[0].name;
-      }
-    } catch (e) {
-      // Table doesn't exist, use fallback
+    // Get name from role_definitions
+    const roleDef = await supabaseRequest(`role_definitions?id=eq.${roleId}&select=name`);
+    if (roleDef && roleDef.length > 0) {
+      return roleDef[0].name;
     }
     
-    // Fallback mapping
-    const nameMapping = {
-      'MANAGEMENT_ROLE_ID': 'Management',
-      'ADMINISTRATOR_ROLE_ID': 'Administrator',
-      'MODERATOR_ROLE_ID': 'Moderator',
-      'SUPPORT_ROLE_ID': 'Support',
-      'POLICE_MANAGEMENT_ROLE_ID': 'Police Management',
-      'EMS_MANAGEMENT_ROLE_ID': 'EMS Management'
-    };
-    
-    return nameMapping[roleId] || 'Player';
+    return 'Player';
   } catch (error) {
     console.error('Error getting user role name:', error);
     return 'Player';
@@ -647,52 +580,11 @@ async function hasPermission(roleId, permission) {
     // Management has all permissions
     if (roleId === 'MANAGEMENT_ROLE_ID') return true;
     
-    // Try new table-based system
-    try {
-      const perm = await supabaseRequest(`permissions?role_id=eq.${roleId}&permission=eq.${permission}&select=permission`);
-      if (perm && perm.length > 0) return true;
-    } catch (e) {
-      // Table doesn't exist, use fallback
-      console.log('Using fallback permission check');
-    }
+    // Use table-based system only
+    const perm = await supabaseRequest(`permissions?role_id=eq.${roleId}&permission=eq.${permission}&select=permission`);
+    if (perm && perm.length > 0) return true;
     
-    // Fallback to old permission system
-    const roleMapping = {
-      'MANAGEMENT_ROLE_ID': 'Management',
-      'ADMINISTRATOR_ROLE_ID': 'Staff',
-      'MODERATOR_ROLE_ID': 'Staff',
-      'SUPPORT_ROLE_ID': 'Staff',
-      'POLICE_MANAGEMENT_ROLE_ID': 'Police Cmd',
-      'EMS_MANAGEMENT_ROLE_ID': 'EMS Cmd'
-    };
-    
-    const oldRole = roleMapping[roleId] || '';
-    
-    const permissions = {
-      'applications.view': ['Staff', 'Police Cmd', 'EMS Cmd'],
-      'applications.review': ['Staff', 'Police Cmd', 'EMS Cmd'],
-      'applications.accept': ['Staff', 'Police Cmd', 'EMS Cmd'],
-      'applications.reject': ['Staff', 'Police Cmd', 'EMS Cmd'],
-      'applications.assign': ['Management'],
-      'tickets.view': ['Staff'],
-      'tickets.manage': ['Management'],
-      'users.view': ['Management'],
-      'users.manage': ['Management'],
-      'audit.view': ['Staff', 'Management'],
-      'settings.manage': ['Management'],
-      'staff.view': ['Management'],
-      'staff.manage': ['Management'],
-      'police.view': ['Police Cmd', 'Management'],
-      'police.manage': ['Police Cmd', 'Management'],
-      'ems.view': ['EMS Cmd', 'Management'],
-      'ems.manage': ['EMS Cmd', 'Management'],
-      'streamers.view': ['Streamer Manager', 'Management'],
-      'streamers.manage': ['Streamer Manager', 'Management'],
-      'content.view': ['Management'],
-      'content.manage': ['Management']
-    };
-    
-    return (permissions[permission] || []).includes(oldRole);
+    return false;
   } catch (error) {
     console.error('Error checking permission:', error);
     return false;
@@ -811,7 +703,7 @@ app.get('/api/permissions', async (req, res) => {
   }
 });
 
-// Role Definitions API (Management only) - with fallback
+// Role Definitions API (Management only)
 app.get('/api/roles', async (req, res) => {
   try {
     const discordId = req.session?.discordUser?.id;
@@ -824,23 +716,66 @@ app.get('/api/roles', async (req, res) => {
       return res.status(403).json({ ok: false, error: 'Management only' });
     }
     
-    try {
-      const roles = await supabaseRequest('role_definitions?select=*&order=priority.desc');
-      res.json({ ok: true, roles: roles || [] });
-    } catch (e) {
-      // Fallback: return hardcoded roles
-      const fallbackRoles = [
-        { id: 'MANAGEMENT_ROLE_ID', name: 'Management', description: 'Full access to everything', priority: 100, is_admin: true },
-        { id: 'ADMINISTRATOR_ROLE_ID', name: 'Administrator', description: 'Daily operations management', priority: 80, is_admin: true },
-        { id: 'MODERATOR_ROLE_ID', name: 'Moderator', description: 'Staff member handling player interactions', priority: 60, is_admin: false },
-        { id: 'SUPPORT_ROLE_ID', name: 'Support', description: 'Basic staff support', priority: 40, is_admin: false },
-        { id: 'POLICE_MANAGEMENT_ROLE_ID', name: 'Police Management', description: 'Police department management', priority: 70, is_admin: false },
-        { id: 'EMS_MANAGEMENT_ROLE_ID', name: 'EMS Management', description: 'EMS department management', priority: 70, is_admin: false }
-      ];
-      res.json({ ok: true, roles: fallbackRoles });
-    }
+    const roles = await supabaseRequest('role_definitions?select=*&order=priority.desc');
+    res.json({ ok: true, roles: roles || [] });
   } catch (error) {
     console.error('Roles API error:', error);
+    res.status(503).json({ ok: false, error: error.message });
+  }
+});
+
+// Staff Roles API (Management only)
+app.get('/api/staff-roles', requirePermission('staff.view'), async (req, res) => {
+  try {
+    const staffRoles = await supabaseRequest('staff_roles?select=*&order=created_at.desc');
+    res.json({ ok: true, staffRoles: staffRoles || [] });
+  } catch (error) {
+    console.error('Staff Roles API error:', error);
+    res.status(503).json({ ok: false, error: error.message });
+  }
+});
+
+app.post('/api/staff-roles', requirePermission('staff.manage'), async (req, res) => {
+  try {
+    const { discord_id, discord_username, role_id } = req.body;
+    
+    if (!discord_id || !discord_username || !role_id) {
+      return res.status(400).json({ ok: false, error: 'Missing required fields' });
+    }
+    
+    // Check if already exists
+    const existing = await supabaseRequest(`staff_roles?discord_id=eq.${discord_id}&select=*`);
+    if (existing && existing.length > 0) {
+      return res.status(400).json({ ok: false, error: 'User already has a staff role' });
+    }
+    
+    const result = await supabaseRequest('staff_roles', {
+      method: 'POST',
+      body: JSON.stringify({
+        discord_id,
+        discord_username,
+        role_id
+      })
+    });
+    
+    res.json({ ok: true, staffRole: result[0] });
+  } catch (error) {
+    console.error('Staff Roles POST error:', error);
+    res.status(503).json({ ok: false, error: error.message });
+  }
+});
+
+app.delete('/api/staff-roles/:discordId', requirePermission('staff.manage'), async (req, res) => {
+  try {
+    const { discordId } = req.params;
+    
+    await supabaseRequest(`staff_roles?discord_id=eq.${discordId}`, {
+      method: 'DELETE'
+    });
+    
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Staff Roles DELETE error:', error);
     res.status(503).json({ ok: false, error: error.message });
   }
 });
@@ -1355,8 +1290,7 @@ app.get('/api/bootstrap-admin', async (req, res) => {
       return res.status(401).json({ ok: false, error: 'Log in with Discord first, then visit this URL again.' });
     }
 
-    // SECURITY: Use table-based system only, not fallback
-    // This ensures the security check in getUserRole cannot be bypassed
+    // SECURITY: Use table-based system only
     try {
       // First, create or update role definition if it doesn't exist
       await supabaseRequest('role_definitions', {
@@ -1380,26 +1314,6 @@ app.get('/api/bootstrap-admin', async (req, res) => {
           discord_username: discordUser.username,
           role_id: 'MANAGEMENT_ROLE_ID'
         })
-      });
-
-      // SECURITY: Also remove from fallback to prevent security bypass
-      const roleMapData = await supabaseRequest('ml_store?key=eq.moon_light_discord_role_map_v1');
-      const roleMapRecord = Array.isArray(roleMapData) && roleMapData.length > 0 ? roleMapData[0] : null;
-      let roleMap = {};
-      if (roleMapRecord && roleMapRecord.value) {
-        try {
-          roleMap = typeof roleMapRecord.value === 'string' ? JSON.parse(roleMapRecord.value) : roleMapRecord.value;
-        } catch (e) { roleMap = {}; }
-      }
-
-      // Remove user from fallback to prevent bypass
-      delete roleMap[discordUser.id.toLowerCase()];
-      if (discordUser.username) delete roleMap[discordUser.username.toLowerCase()];
-
-      await supabaseRequest('ml_store', {
-        method: 'POST',
-        headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify({ key: 'moon_light_discord_role_map_v1', value: JSON.stringify(roleMap) })
       });
 
       res.json({ ok: true, message: `${discordUser.username || discordUser.id} is now Management via table-based system. Remove BOOTSTRAP_SECRET now, then log out and log back in.` });
@@ -1431,7 +1345,7 @@ app.get('/api/auth/role', async (req, res) => {
       });
     }
     
-    // Get user role from staff_roles table (with fallback)
+    // Get user role from staff_roles table
     const roleId = await getUserRole(discordId);
     const roleName = await getUserRoleName(discordId);
     

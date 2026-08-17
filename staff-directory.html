@@ -86,45 +86,72 @@
 </main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
 <script src="assets/portal.js"></script>
 <script>
-/* Old client-only role names this page writes into the legacy key-value role
-   map (server.js's getUserRole() fallback reads these exact strings and maps
-   them to the real role IDs — see roleMapping in server.js). */
+/* NOTE: This interface now uses the table-based system only.
+   The old key-value store fallback has been removed for security. */
 const ML_ROLES=["Management","Staff","Police Cmd","EMS Cmd","Streamer Manager"];
-const STAFF_MAP_KEY="moon_light_discord_role_map_v1";
 
 const lock=document.getElementById("lock"), box=document.getElementById("box");
 document.getElementById("roleSel").innerHTML=ML_ROLES.map(r=>`<option>${r}</option>`).join("");
 
-async function getRoleMap(){const m=await mlGetStore(STAFF_MAP_KEY);return (m&&typeof m==="object")?m:{}}
-async function saveRoleMap(m){return await mlSetStore(STAFF_MAP_KEY,m)}
+async function getStaffRoles(){
+  const response=await fetch("/api/staff-roles");
+  const data=await response.json();
+  return data.ok?data.staffRoles:[];
+}
+
+async function saveStaffRole(discordId,username,roleId){
+  const response=await fetch("/api/staff-roles",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({discord_id:discordId,discord_username:username,role_id:roleId})
+  });
+  return await response.json();
+}
 
 async function render(){
-  const m=await getRoleMap();
-  const keys=Object.keys(m);
-  document.getElementById("body").innerHTML=`<tr><th>Name</th><th>ID</th><th>Role</th><th></th></tr>`+
-    (keys.length?keys.map(k=>`<tr><td>${mlEsc(m[k].name||k)}</td><td>${mlEsc(k)}</td><td><span class="ml-pill">${mlEsc(m[k].role||m[k])}</span></td><td><button class="ml-btn danger" onclick="removeMap('${k.replace(/'/g,"\\'")}')">Remove</button></td></tr>`).join(""):`<tr><td colspan="4">No mappings yet.</td></tr>`);
+  const staffRoles=await getStaffRoles();
+  document.getElementById("body").innerHTML=`<tr><th>Name</th><th>Discord ID</th><th>Role</th><th></th></tr>`+
+    (staffRoles.length?staffRoles.map(r=>`<tr><td>${mlEsc(r.discord_username)}</td><td>${mlEsc(r.discord_id)}</td><td><span class="ml-pill">${mlEsc(r.role_id)}</span></td><td><button class="ml-btn danger" onclick="removeStaffRole('${r.discord_id.replace(/'/g,"\\'")}')">Remove</button></td></tr>`).join(""):`<tr><td colspan="4">No staff roles yet.</td></tr>`);
 }
 
 async function addMap(){
   const name=document.getElementById("sName").value.trim();
-  const id=document.getElementById("sId").value.trim().toLowerCase();
+  const id=document.getElementById("sId").value.trim();
   const role=document.getElementById("roleSel").value;
-  if(!name||!id){alert("Enter both Name and ID.");return}
-  const m=await getRoleMap();
-  m[id]={name,role};
-  await saveRoleMap(m);
-  await mlLog("Settings",`Discord role mapping set: ${name} (${id}) → ${role}`,name,`Role: ${role}`);
-  document.getElementById("sName").value="";
-  document.getElementById("sId").value="";
-  await render();
+  if(!name||!id){alert("Enter both Name and Discord ID.");return}
+  
+  // Map role name to role ID
+  const roleMapping={
+    'Management':'MANAGEMENT_ROLE_ID',
+    'Staff':'MODERATOR_ROLE_ID',
+    'Police Cmd':'POLICE_MANAGEMENT_ROLE_ID',
+    'EMS Cmd':'EMS_MANAGEMENT_ROLE_ID',
+    'Streamer Manager':'ADMINISTRATOR_ROLE_ID'
+  };
+  const roleId=roleMapping[role];
+  if(!roleId){alert("Invalid role selected.");return}
+  
+  const result=await saveStaffRole(id,name,roleId);
+  if(result.ok){
+    await mlLog("Settings",`Staff role assigned: ${name} (${id}) → ${role}`,name,`Role: ${role}`);
+    document.getElementById("sName").value="";
+    document.getElementById("sId").value="";
+    await render();
+  }else{
+    alert("Failed to add staff role: "+(result.error||"Unknown error"));
+  }
 }
-async function removeMap(key){
-  const m=await getRoleMap();
-  const entry=m[key];
-  delete m[key];
-  await saveRoleMap(m);
-  await mlLog("Settings",`Discord role mapping removed`,entry?.name||key,"");
-  await render();
+
+async function removeStaffRole(discordId){
+  if(!confirm("Remove this staff role?"))return;
+  const response=await fetch(`/api/staff-roles/${discordId}`,{method:"DELETE"});
+  const result=await response.json();
+  if(result.ok){
+    await mlLog("Settings",`Staff role removed`,discordId,"");
+    await render();
+  }else{
+    alert("Failed to remove staff role: "+(result.error||"Unknown error"));
+  }
 }
 
 (async function init(){
