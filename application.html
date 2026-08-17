@@ -369,7 +369,7 @@ document.getElementById("applicationForm").addEventListener("submit", async func
     const response = await fetch('/api/applications');
     const data = await response.json();
     
-    if (data.ok && data.applications) {
+    if (data.ok && data.applications && Array.isArray(data.applications)) {
       const existingApp = data.applications.find(app => 
         app.type === selectedDepartment && ['pending', 'under_review', 'interview'].includes(app.status)
       );
@@ -382,6 +382,7 @@ document.getElementById("applicationForm").addEventListener("submit", async func
     }
   } catch (error) {
     console.error('Error checking existing applications:', error);
+    // Continue with submission even if check fails
   }
   
   // Submit new application using new API

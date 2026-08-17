@@ -79,7 +79,7 @@ const lock=document.getElementById("lock"), box=document.getElementById("box");
     if(await mlRoleGate(lock,box,"EMS","EMS Cmd")){
       lock.className="role-message granted";
       lock.innerHTML="EMS Ranks access granted.";
-      render();
+      await render();
     }
   }catch(e){
     console.error("Error initializing EMS ranks:",e);
@@ -98,9 +98,9 @@ setTimeout(() => {
   }
 }, 10000); // 10 second timeout
 
-function render(){
-  const ranks=mlGetRanks(DEPT);
-  const members=mlDeptMembers(DEPT);
+async function render(){
+  const ranks=await mlGetRanks(DEPT);
+  const members=await mlDeptMembers(DEPT);
   document.getElementById("rankList").innerHTML=ranks.map((r,i)=>{
     const inUse=members.some(m=>m.rank===r);
     return `<div class="ml-card" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:10px">
@@ -116,38 +116,38 @@ function render(){
 
 const AREA=DEPT==="POLICE"?"Police":"EMS";
 
-function addRank(){
+async function addRank(){
   const v=document.getElementById("newRank").value.trim();
   if(!v)return;
-  const ranks=mlGetRanks(DEPT);
+  const ranks=await mlGetRanks(DEPT);
   if(ranks.includes(v)){alert("Rank already exists.");return}
   ranks.push(v);
-  mlSaveRanks(DEPT,ranks);
-  mlLog(AREA,"Rank added",v,`New order position: ${ranks.length}`);
+  await mlSaveRanks(DEPT,ranks);
+  await mlLog(AREA,"Rank added",v,`New order position: ${ranks.length}`);
   document.getElementById("newRank").value="";
-  render();
+  await render();
 }
 
-function move(i,dir){
-  const ranks=mlGetRanks(DEPT);
+async function move(i,dir){
+  const ranks=await mlGetRanks(DEPT);
   const j=i+dir;
   if(j<0||j>=ranks.length)return;
   [ranks[i],ranks[j]]=[ranks[j],ranks[i]];
-  mlSaveRanks(DEPT,ranks);
-  mlLog(AREA,"Rank order changed",ranks[j],`Swapped with ${ranks[i]}`);
-  render();
+  await mlSaveRanks(DEPT,ranks);
+  await mlLog(AREA,"Rank order changed",ranks[j],`Swapped with ${ranks[i]}`);
+  await render();
 }
 
-function remove(i){
-  const ranks=mlGetRanks(DEPT);
-  const members=mlDeptMembers(DEPT);
+async function remove(i){
+  const ranks=await mlGetRanks(DEPT);
+  const members=await mlDeptMembers(DEPT);
   if(members.some(m=>m.rank===ranks[i])){alert("Cannot remove a rank currently assigned to a member.");return}
   if(!confirm(`Remove rank "${ranks[i]}"?`))return;
   const name=ranks[i];
   ranks.splice(i,1);
-  mlSaveRanks(DEPT,ranks);
-  mlLog(AREA,"Rank removed",name,"");
-  render();
+  await mlSaveRanks(DEPT,ranks);
+  await mlLog(AREA,"Rank removed",name,"");
+  await render();
 }
 </script>
 </body></html>

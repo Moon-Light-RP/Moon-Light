@@ -178,7 +178,25 @@ function mlSetRole(role){
 
 async function mlHasPerm(area){
   const roleLabel=await mlRole();
-  if(roleLabel==="Management")return true;
+  // SECURITY: Always verify with server for sensitive areas
+  if(roleLabel==="Management"){
+    // Double-check with server for Management role
+    try{
+      const response=await fetch("/api/auth/role");
+      if(response.ok){
+        const data=await response.json();
+        // Only trust Management if server confirms it
+        if(data.roleId!=="MANAGEMENT_ROLE_ID"){
+          console.warn("SECURITY: Client claims Management but server disagrees. Denying access.");
+          return false;
+        }
+      }
+    }catch(e){
+      console.error("SECURITY: Failed to verify Management role with server:",e);
+      return false;
+    }
+    return true;
+  }
   return(ML_PERMS[area]||[]).includes(roleLabel);
 }
 
@@ -248,6 +266,28 @@ async function mlRoleGate(lockEl,contentEl,area,label){
   const roleId=await mlRole();
   const roleName=await mlGetRoleName();
   const has=await mlHasPerm(area);
+  
+  // SECURITY: Double-check with server for sensitive areas
+  if(has && (area==="Settings" || area==="Management" || area==="AuditLogs")){
+    try{
+      const response=await fetch("/api/auth/role");
+      if(response.ok){
+        const data=await response.json();
+        // Verify server agrees with client role
+        if(data.roleId!==roleId && roleId==="MANAGEMENT_ROLE_ID"){
+          console.warn("SECURITY: Server disagrees with client Management role. Denying access.");
+          lockEl.innerHTML=`Security check failed. Your role: <b>${mlEsc(roleName||"Player")}</b>`;
+          contentEl.style.display="none";
+          return false;
+        }
+      }
+    }catch(e){
+      console.error("SECURITY: Failed to verify sensitive area access:",e);
+      lockEl.innerHTML=`Security check failed. Please refresh.`;
+      contentEl.style.display="none";
+      return false;
+    }
+  }
   
   if(has){
     lockEl.className="role-ok";

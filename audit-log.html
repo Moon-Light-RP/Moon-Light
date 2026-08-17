@@ -296,8 +296,29 @@ async function checkAccess(){
     const role=await mlRole();
     const roleName=await mlGetRoleName();
     
-    // Only Management can access audit log
+    // SECURITY: Verify Management role with server for sensitive data
     if(role==="Management" || roleName==="Management" || await mlHasPerm("Management")){
+      try{
+        const response=await fetch("/api/auth/role");
+        if(response.ok){
+          const data=await response.json();
+          // Verify server agrees with Management role
+          if(data.roleId!=="MANAGEMENT_ROLE_ID" && data.roleName!=="Management"){
+            console.warn("SECURITY: Server disagrees with client Management role. Denying audit log access.");
+            lock.className="role-message denied";
+            lock.innerHTML="Security check failed. Your role: " + (data.roleName||"Player");
+            box.style.display="none";
+            return false;
+          }
+        }
+      }catch(e){
+        console.error("SECURITY: Failed to verify Management role for audit log:",e);
+        lock.className="role-message denied";
+        lock.innerHTML="Security check failed. Please refresh.";
+        box.style.display="none";
+        return false;
+      }
+      
       lock.className="role-message granted";
       lock.innerHTML="Management access granted. Full audit log access enabled.";
       box.style.display="block";

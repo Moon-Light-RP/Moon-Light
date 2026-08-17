@@ -178,6 +178,29 @@ async function initStaffPanel(){
     const roleName=await mlGetRoleName();
     console.log("Got role name:", roleName);
     
+    // SECURITY: Verify Management role with server
+    if(roleLabel==="MANAGEMENT_ROLE_ID"){
+      try{
+        const response=await fetch("/api/auth/role");
+        if(response.ok){
+          const data=await response.json();
+          if(data.roleId!=="MANAGEMENT_ROLE_ID"){
+            console.warn("SECURITY: Server disagrees with client Management role. Denying access.");
+            lock.className="role-message denied";
+            lock.innerHTML="Security check failed. Your role: " + (data.roleName||"Player");
+            box.style.display="none";
+            return;
+          }
+        }
+      }catch(e){
+        console.error("SECURITY: Failed to verify Management role:",e);
+        lock.className="role-message denied";
+        lock.innerHTML="Security check failed. Please refresh.";
+        box.style.display="none";
+        return;
+      }
+    }
+    
     // Ensure roleName is a string
     const displayRoleName = typeof roleName === 'string' ? roleName : 'Player';
     

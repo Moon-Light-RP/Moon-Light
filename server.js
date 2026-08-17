@@ -581,7 +581,8 @@ async function getUserRole(discordId) {
     const userRole = roleMap[discordId.toLowerCase()] || '';
     console.log('User role from map:', userRole, 'for discordId:', discordId);
     
-    // Map old role names to new role IDs
+    // SECURITY: Do not use fallback role map for sensitive roles like Management
+    // Only allow Management from table-based system to prevent unauthorized access
     const roleMapping = {
       'Management': 'MANAGEMENT_ROLE_ID',
       'Staff': 'MODERATOR_ROLE_ID',
@@ -591,6 +592,13 @@ async function getUserRole(discordId) {
     };
     
     const mappedRole = roleMapping[userRole] || 'PLAYER';
+    
+    // SECURITY CHECK: If fallback gives Management, default to PLAYER for security
+    if (mappedRole === 'MANAGEMENT_ROLE_ID') {
+      console.warn('SECURITY: Attempted to assign Management role from fallback. Defaulting to PLAYER for security.');
+      return 'PLAYER';
+    }
+    
     console.log('Mapped role:', mappedRole);
     
     return mappedRole;
@@ -1347,29 +1355,58 @@ app.get('/api/bootstrap-admin', async (req, res) => {
       return res.status(401).json({ ok: false, error: 'Log in with Discord first, then visit this URL again.' });
     }
 
-    // Write directly into the same key-value role map that getUserRole()
-    // reads as its fallback, so this works regardless of whether the newer
-    // staff_roles/role_definitions tables exist yet.
-    const roleMapData = await supabaseRequest('ml_store?key=eq.moon_light_discord_role_map_v1');
-    const roleMapRecord = Array.isArray(roleMapData) && roleMapData.length > 0 ? roleMapData[0] : null;
-    let roleMap = {};
-    if (roleMapRecord && roleMapRecord.value) {
-      try {
-        roleMap = typeof roleMapRecord.value === 'string' ? JSON.parse(roleMapRecord.value) : roleMapRecord.value;
-      } catch (e) { roleMap = {}; }
+    // SECURITY: Use table-based system only, not fallback
+    // This ensures the security check in getUserRole cannot be bypassed
+    try {
+      // First, create or update role definition if it doesn't exist
+      await supabaseRequest('role_definitions', {
+        method: 'POST',
+        headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify({
+          id: 'MANAGEMENT_ROLE_ID',
+          name: 'Management',
+          description: 'Full system access',
+          priority: 100,
+          is_admin: true
+        })
+      });
+
+      // Add user to staff_roles table
+      await supabaseRequest('staff_roles', {
+        method: 'POST',
+        headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify({
+          discord_id: discordUser.id,
+          discord_username: discordUser.username,
+          role_id: 'MANAGEMENT_ROLE_ID'
+        })
+      });
+
+      // SECURITY: Also remove from fallback to prevent security bypass
+      const roleMapData = await supabaseRequest('ml_store?key=eq.moon_light_discord_role_map_v1');
+      const roleMapRecord = Array.isArray(roleMapData) && roleMapData.length > 0 ? roleMapData[0] : null;
+      let roleMap = {};
+      if (roleMapRecord && roleMapRecord.value) {
+        try {
+          roleMap = typeof roleMapRecord.value === 'string' ? JSON.parse(roleMapRecord.value) : roleMapRecord.value;
+        } catch (e) { roleMap = {}; }
+      }
+
+      // Remove user from fallback to prevent bypass
+      delete roleMap[discordUser.id.toLowerCase()];
+      if (discordUser.username) delete roleMap[discordUser.username.toLowerCase()];
+
+      await supabaseRequest('ml_store', {
+        method: 'POST',
+        headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify({ key: 'moon_light_discord_role_map_v1', value: JSON.stringify(roleMap) })
+      });
+
+      res.json({ ok: true, message: `${discordUser.username || discordUser.id} is now Management via table-based system. Remove BOOTSTRAP_SECRET now, then log out and log back in.` });
+    } catch (tableError) {
+      console.error('Table-based bootstrap failed:', tableError);
+      return res.status(500).json({ ok: false, error: 'Table-based system required for security. Please ensure staff_roles and role_definitions tables exist.' });
     }
-
-    roleMap[discordUser.id.toLowerCase()] = 'Management';
-    if (discordUser.username) roleMap[discordUser.username.toLowerCase()] = 'Management';
-
-    // Same upsert pattern used by the existing PUT /api/store route.
-    await supabaseRequest('ml_store', {
-      method: 'POST',
-      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({ key: 'moon_light_discord_role_map_v1', value: JSON.stringify(roleMap) })
-    });
-
-    res.json({ ok: true, message: `${discordUser.username || discordUser.id} is now Management. Remove BOOTSTRAP_SECRET now, then log out and log back in.` });
   } catch (error) {
     console.error('Bootstrap admin error:', error);
     res.status(500).json({ ok: false, error: error.message });
