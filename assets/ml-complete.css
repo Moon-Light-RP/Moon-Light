@@ -3,6 +3,7 @@
 *{box-sizing:border-box}
 :root{--accent:#dc2626;--accent2:#ef4444;--accent-soft:#f87171;--accent-tint:#fecaca}
 .ml-page{min-height:100vh;background:#070910;color:#eef1fb;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.ml-page main{background:#070910}
 .ml-page .ml-nav, .ml-page .ml-footer{box-shadow:0 0 0 1px rgba(255,255,255,.03) inset}
 .ml-nav{height:72px;border-bottom:1px solid #1b2030;background:#090b12;display:flex;align-items:center;justify-content:space-between;padding:0 6%;position:sticky;top:0;z-index:5}
 .ml-brand{color:#f5f7ff;text-decoration:none;font-weight:800;letter-spacing:.4px;display:flex;gap:9px;align-items:center}.ml-moon{width:33px;height:33px;border:1px solid #dc2626;border-radius:50%;display:grid;place-items:center;color:var(--accent2)}
