@@ -80,7 +80,6 @@
 </div>
 </div>
 <div class="ml-card" style="margin-top:16px"><h3>Current Mappings</h3><table class="ml-table"><tbody id="body"><tr><th>Name</th><th>ID</th><th>Role</th><th></th></tr></tbody></table></div>
-<div class="ml-card" style="margin-top:16px;border-color:#dc2626"><h3>Quick Fix</h3><p class="ml-muted">Remove HKA (694893536939868160) from Staff Directory</p><button class="ml-btn danger" onclick="removeHKA()">Remove HKA</button></div>
 </div>
 </div>
 </main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
@@ -151,18 +150,6 @@ async function removeStaffRole(discordId){
     await render();
   }else{
     alert("Failed to remove staff role: "+(result.error||"Unknown error"));
-  }
-}
-
-async function removeHKA(){
-  if(!confirm("Remove HKA (694893536939868160) from Staff Directory?"))return;
-  const response=await fetch(`/api/staff-roles/694893536939868160`,{method:"DELETE"});
-  const result=await response.json();
-  if(result.ok){
-    await mlLog("Settings",`HKA removed from Staff Directory`,"694893536939868160","");
-    await render();
-  }else{
-    alert("Failed to remove HKA: "+(result.error||"Unknown error"));
   }
 }
 
