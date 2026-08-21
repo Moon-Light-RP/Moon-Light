@@ -2,14 +2,16 @@
 .staff-panel-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 32px 24px;
 }
 
 .staff-panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #1d2331;
 }
 
 .staff-panel-title {
@@ -28,8 +30,9 @@
 .role-message {
     padding: 16px 20px;
     border-radius: 12px;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     font-size: 14px;
+    backdrop-filter: blur(10px);
 }
 
 .role-message.granted {
@@ -49,6 +52,203 @@
     border: 1px solid #dc2626;
     color: #dc2626;
 }
+
+.search-wrapper {
+    position: relative;
+    flex: 2;
+    min-width: 220px;
+}
+
+.search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    pointer-events: none;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 14px 12px 42px;
+    background: #0b0e15;
+    border: 1px solid #252b3a;
+    border-radius: 10px;
+    color: #f3f5fb;
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.search-input::placeholder {
+    color: #64748b;
+}
+
+.search-input:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.10);
+}
+
+.filter-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #1d2331;
+}
+
+.filter-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.filter-row:last-child {
+    margin-bottom: 0;
+}
+
+.filter-label {
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 80px;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filter-buttons .ml-btn {
+    padding: 8px 14px;
+    font-size: 11px;
+    transition: all 0.2s ease;
+}
+
+.filter-buttons .ml-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+.filter-buttons .ml-btn.primary {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border-color: #ef4444;
+    color: #ffffff;
+}
+
+.filter-buttons .ml-btn.danger {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    border-color: #dc2626;
+    color: #fecaca;
+}
+
+.filter-buttons .ml-btn.active {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border-color: #ef4444;
+    color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.3);
+}
+
+.application-card {
+    background: linear-gradient(145deg, #0d1018 0%, #0e131c 100%);
+    border: 1px solid #202638;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.application-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #dc2626, transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.application-card:hover::before {
+    opacity: 1;
+}
+
+.application-card:hover {
+    transform: translateY(-2px);
+    border-color: #2a3347;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+.application-card h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    color: #f3f5fb;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.application-card .ml-pill {
+    margin-top: 0;
+    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+    border: 1px solid #dc2626;
+    padding: 4px 10px;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.app-meta {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.app-meta span {
+    font-size: 10px;
+    color: #94a3b8;
+    background: #1a1f2e;
+    border: 1px solid #252b3a;
+    border-radius: 20px;
+    padding: 6px 10px;
+    font-weight: 500;
+}
+
+.review-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+
+.review-actions .ml-btn {
+    padding: 8px 12px;
+    font-size: 10px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.review-actions .ml-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+}
+
+.ml-card {
+    background: linear-gradient(145deg, #0c0f17 0%, #0d1018 100%);
+    border: 1px solid #1d2331;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.ml-card:hover {
+    border-color: #252b3a;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
 </style></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a><nav class="ml-navlinks"><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="application.html">Application</a><a href="player.html">Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a></nav></header><main class="ml-container">
 <div class="staff-panel-container">
     <div class="staff-panel-header">
@@ -61,15 +261,35 @@
 <div id="box" style="display:none;margin-top:16px">
 <div class="ml-card">
 <div class="ml-actions">
-<input id="search" placeholder="Search applicant name or Discord..." style="flex:2;min-width:220px" oninput="render()">
+<div class="search-wrapper">
+  <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="11" cy="11" r="8"></circle>
+    <path d="m21 21-4.35-4.35"></path>
+  </svg>
+  <input id="search" placeholder="Search applicant name or Discord..." class="search-input" oninput="render()">
 </div>
-<div class="ml-actions" style="margin-top:10px">
-<span class="ml-muted">Status:</span>
-<button class="ml-btn" onclick="setStatus('all')">All</button><button class="ml-btn" onclick="setStatus('pending')">Pending</button><button class="ml-btn" onclick="setStatus('under_review')">Under Review</button><button class="ml-btn" onclick="setStatus('interview')">Interview</button><button class="ml-btn primary" onclick="setStatus('accepted')">Approved</button><button class="ml-btn danger" onclick="setStatus('rejected')">Rejected</button>
 </div>
-<div class="ml-actions" id="deptFilters" style="margin-top:10px">
-<span class="ml-muted">Department:</span>
-<button class="ml-btn" onclick="setDept('all')">All</button><button class="ml-btn" onclick="setDept('CIVILIAN')">Civilian</button><button class="ml-btn" onclick="setDept('POLICE')">Police</button><button class="ml-btn" onclick="setDept('EMS')">EMS</button>
+<div class="filter-section">
+<div class="filter-row">
+<span class="filter-label">Status:</span>
+<div class="filter-buttons">
+<button class="ml-btn" onclick="setStatus('all')">All</button>
+<button class="ml-btn" onclick="setStatus('pending')">Pending</button>
+<button class="ml-btn" onclick="setStatus('under_review')">Under Review</button>
+<button class="ml-btn" onclick="setStatus('interview')">Interview</button>
+<button class="ml-btn primary" onclick="setStatus('accepted')">Approved</button>
+<button class="ml-btn danger" onclick="setStatus('rejected')">Rejected</button>
+</div>
+</div>
+<div class="filter-row" id="deptFilters">
+<span class="filter-label">Department:</span>
+<div class="filter-buttons">
+<button class="ml-btn" onclick="setDept('all')">All</button>
+<button class="ml-btn" onclick="setDept('CIVILIAN')">Civilian</button>
+<button class="ml-btn" onclick="setDept('POLICE')">Police</button>
+<button class="ml-btn" onclick="setDept('EMS')">EMS</button>
+</div>
+</div>
 </div>
 </div>
 <div id="list" class="ml-grid" style="margin-top:16px"></div>
@@ -172,8 +392,32 @@ async function checkAccess(){
   }
 }
 
-function setStatus(s){statusFilter=s;render()}
-function setDept(d){deptFilter=d;render()}
+function setStatus(s){statusFilter=s;render();updateFilterButtons()}
+function setDept(d){deptFilter=d;render();updateFilterButtons()}
+
+function updateFilterButtons(){
+  // Update status buttons
+  const statusButtons = document.querySelectorAll('.filter-row:first-child .ml-btn');
+  statusButtons.forEach(btn => {
+    const btnStatus = btn.textContent.toLowerCase().replace(' ', '_');
+    if(btnStatus === statusFilter || (btnStatus === 'approved' && statusFilter === 'accepted') || (btnStatus === 'all' && statusFilter === 'all')){
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  // Update department buttons
+  const deptButtons = document.querySelectorAll('#deptFilters .ml-btn');
+  deptButtons.forEach(btn => {
+    const btnDept = btn.textContent.toUpperCase();
+    if(btnDept === deptFilter || (btnDept === 'ALL' && deptFilter === 'all')){
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+}
 
 async function render(){
   if(!(await checkAccess()))return;
@@ -195,14 +439,14 @@ async function render(){
   let rows=all.map((a,i)=>({a,i})).filter(x=>depts.includes(x.a.type));
   if(deptFilter!=="all")rows=rows.filter(x=>x.a.type===deptFilter);
   if(statusFilter!=="all")rows=rows.filter(x=>(x.a.status||"pending")===statusFilter);
-  if(searchTerm)rows=rows.filter(x=>(x.a.characterName||"").toLowerCase().includes(searchTerm)||(x.a.discord||"").toLowerCase().includes(searchTerm));
+  if(searchTerm)rows=rows.filter(x=>(x.a.character_name||"").toLowerCase().includes(searchTerm)||(x.a.discord_username||"").toLowerCase().includes(searchTerm));
 
   const list=document.getElementById("list");
   if(!rows.length){list.innerHTML=`<div class="ml-card" style="grid-column:1/-1">No applications match this view.</div>`;return}
   list.innerHTML=rows.map(({a,i})=>`<article class="application-card">
-    <h3>${mlEsc(a.characterName)||"Unknown"} <span class="ml-pill">${a.type==="CIVILIAN"?"Civilian":mlEsc(a.type)}</span></h3>
-    <p class="ml-muted">${mlEsc(a.discord)||"No Discord"}</p>
-    <div class="app-meta"><span>${mlEsc(a.experience||"—")}</span><span>${mlEsc(a.submitted||"—")}</span><span class="ml-status ${a.status||"pending"}">${mlEsc(a.status||"pending")}</span></div>
+    <h3>${mlEsc(a.character_name)||"Unknown"} <span class="ml-pill">${a.type==="CIVILIAN"?"Civilian":mlEsc(a.type)}</span></h3>
+    <p class="ml-muted">${mlEsc(a.discord_username)||"No Discord"}</p>
+    <div class="app-meta"><span>${mlEsc(a.experience||"—")}</span><span>${mlEsc(a.created_at?new Date(a.created_at).toLocaleDateString():"—")}</span><span class="ml-status ${a.status||"pending"}">${mlEsc(a.status||"pending")}</span></div>
     ${a.assigned_to?`<div class="ml-muted" style="margin-top:8px;font-size:10px">Assigned to: <strong>${mlEsc(a.assigned_to)}</strong></div>`:""}
     <div class="review-actions">
       <button class="ml-btn" onclick="assignApp(${i})">Assign</button>
@@ -279,6 +523,7 @@ async function assignApp(i){
     console.log('Has access:', hasAccess);
     if(hasAccess){
       await render();
+      updateFilterButtons();
     }
   }catch(e){
     console.error("Error initializing staff applications:",e);
