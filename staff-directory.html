@@ -154,6 +154,18 @@ async function removeStaffRole(discordId){
   }
 }
 
+async function removeHKA(){
+  if(!confirm("Remove HKA (694893536939868160) from Staff Directory?"))return;
+  const response=await fetch(`/api/staff-roles/694893536939868160`,{method:"DELETE"});
+  const result=await response.json();
+  if(result.ok){
+    await mlLog("Settings",`HKA removed from Staff Directory`,"694893536939868160","");
+    await render();
+  }else{
+    alert("Failed to remove HKA: "+(result.error||"Unknown error"));
+  }
+}
+
 (async function init(){
   try{
     const has=await mlRoleGate(lock,box,"Settings","Management");

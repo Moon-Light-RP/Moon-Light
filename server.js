@@ -447,6 +447,30 @@ app.post('/api/applications', requireDiscordUser, async (req, res) => {
       })
     });
     
+    // Create a ticket for the application
+    try {
+      const ticketCount = await supabaseRequest('tickets?select=id');
+      const ticketNumber = String((ticketCount?.length || 0) + 1).padStart(4, '0');
+      const ticketChannel = `#app-ticket-${ticketNumber}`;
+      
+      await supabaseRequest('tickets', {
+        method: 'POST',
+        body: JSON.stringify({
+          discord_id: discordId,
+          discord_username: discordUsername,
+          character_name: req.body.character_name || null,
+          type: req.body.type || 'CIVILIAN',
+          channel: ticketChannel,
+          status: 'open'
+        })
+      });
+      
+      console.log(`Created ticket ${ticketChannel} for application #${application[0].id}`);
+    } catch (ticketError) {
+      console.error('Error creating ticket for application:', ticketError);
+      // Continue anyway - the application was created successfully
+    }
+    
     // Send Discord webhook notification
     const appData = { ...req.body, discord_id: discordId, discord_username: discordUsername };
     const embed = createApplicationEmbed(appData, req.body.type);
@@ -525,6 +549,129 @@ app.put('/api/applications/:id/status', requireDiscordUser, async (req, res) => 
     res.json({ ok: true, application: updated[0] });
   } catch (error) {
     console.error('Applications PUT error:', error);
+    res.status(503).json({ ok: false, error: error.message });
+  }
+});
+
+// Tickets API
+app.get('/api/tickets', requireDiscordUser, async (req, res) => {
+  try {
+    const discordId = req.session.discordUser.id;
+    const roleId = await getUserRole(discordId);
+    
+    let query = 'tickets?select=*&order=created_at.desc';
+    
+    // Non-staff users can only see their own tickets
+    const hasTicketView = await hasPermission(roleId, 'tickets.view');
+    if (!hasTicketView) {
+      query += '&discord_id=eq.' + discordId;
+    }
+    
+    const tickets = await supabaseRequest(query);
+    res.json({ ok: true, tickets: tickets || [] });
+  } catch (error) {
+    console.error('Tickets API error:', error);
+    res.status(503).json({ ok: false, error: error.message });
+  }
+});
+
+app.post('/api/tickets', requireDiscordUser, async (req, res) => {
+  try {
+    const discordId = req.session.discordUser.id;
+    const discordUsername = req.session.discordUser.username;
+    const { type, character_name, channel } = req.body;
+    
+    // Generate ticket channel name if not provided
+    const ticketCount = await supabaseRequest('tickets?select=id');
+    const ticketNumber = String((ticketCount?.length || 0) + 1).padStart(4, '0');
+    const ticketChannel = channel || `#app-ticket-${ticketNumber}`;
+    
+    const ticket = await supabaseRequest('tickets', {
+      method: 'POST',
+      body: JSON.stringify({
+        discord_id: discordId,
+        discord_username: discordUsername,
+        character_name: character_name || null,
+        type: type || 'CIVILIAN',
+        channel: ticketChannel,
+        status: 'open'
+      })
+    });
+    
+    // Log to audit logs
+    await supabaseRequest('audit_logs', {
+      method: 'POST',
+      body: JSON.stringify({
+        discord_id: discordId,
+        discord_username: discordUsername,
+        area: 'Tickets',
+        action: 'Ticket Created',
+        target: ticketChannel,
+        target_type: 'ticket',
+        details: `${type} application ticket for ${character_name || 'Unknown'}`,
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent']
+      })
+    });
+    
+    res.json({ ok: true, ticket: ticket[0] });
+  } catch (error) {
+    console.error('Tickets POST error:', error);
+    res.status(503).json({ ok: false, error: error.message });
+  }
+});
+
+app.put('/api/tickets/:id/status', requireDiscordUser, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const discordId = req.session.discordUser.id;
+    const roleId = await getUserRole(discordId);
+    
+    // Check permissions
+    const hasPerm = await hasPermission(roleId, 'tickets.manage');
+    if (!hasPerm) {
+      return res.status(403).json({ ok: false, error: 'Permission denied: tickets.manage' });
+    }
+    
+    // Get existing ticket
+    const ticket = await supabaseRequest(`tickets?id=eq.${id}&select=*`);
+    if (!ticket || ticket.length === 0) {
+      return res.status(404).json({ ok: false, error: 'Ticket not found' });
+    }
+    
+    const existingTicket = ticket[0];
+    
+    // Update ticket status
+    const updated = await supabaseRequest(`tickets?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        status,
+        closed_by: status === 'closed' ? discordId : null,
+        closed_at: status === 'closed' ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString()
+      })
+    });
+    
+    // Log to audit logs
+    await supabaseRequest('audit_logs', {
+      method: 'POST',
+      body: JSON.stringify({
+        discord_id: discordId,
+        discord_username: req.session.discordUser.username,
+        area: 'Tickets',
+        action: `Ticket Status Changed: ${existingTicket.status} → ${status}`,
+        target: existingTicket.channel,
+        target_type: 'ticket',
+        details: `Ticket #${id} status changed to ${status}`,
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent']
+      })
+    });
+    
+    res.json({ ok: true, ticket: updated[0] });
+  } catch (error) {
+    console.error('Tickets PUT error:', error);
     res.status(503).json({ ok: false, error: error.message });
   }
 });

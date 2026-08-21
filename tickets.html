@@ -101,18 +101,15 @@ async function render(){
   list.innerHTML=filtered.length?filtered.map(t=>`<article class="ml-card">
     <div class="app-meta"><span class="ml-pill">${mlEsc(t.type)}</span><span class="ml-status ${t.status==="open"?"pending":"accepted"}">${mlEsc(t.status)}</span></div>
     <h3 style="margin-top:8px">${mlEsc(t.channel)}</h3>
-    <p class="ml-muted">${mlEsc(t.characterName||"Unknown")} · ${mlEsc(t.discord||"—")}</p>
-    <p class="ml-muted">Opened ${mlFmt(t.created)}</p>
+    <p class="ml-muted">${mlEsc(t.character_name||"Unknown")} · ${mlEsc(t.discord_username||"—")}</p>
+    <p class="ml-muted">Opened ${mlFmt(t.created_at)}</p>
     <button class="ml-btn" onclick="closeTicket('${t.id}')" ${t.status==="closed"?"disabled":""}>Close Ticket</button>
   </article>`).join(""):`<div class="ml-card" style="grid-column:1/-1">No tickets yet.</div>`;
 }
 
 async function closeTicket(id){
-  const all=await mlGetTickets();
-  const t=all.find(x=>x.id===id);
+  const t=await mlUpdateTicketStatus(id,"closed");
   if(t){
-    t.status="closed";
-    await mlSaveTickets(all);
     await mlLog(t.type==="CIVILIAN"?"Applications":t.type,"Ticket closed",t.channel,"");
     await mlPushDiscordLog("ticket",`${t.channel} closed`,"");
     await render();

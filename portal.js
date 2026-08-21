@@ -207,14 +207,24 @@ function mlSaveContent(c){localStorage.setItem(CONTENT_KEY,JSON.stringify(c))}
    a local "identity" plus a staff-maintained Discord-ID → Role map that a real bot
    would otherwise populate automatically from the live Discord server's roles. */
 const IDENTITY_KEY="moon_light_discord_identity_v1";
-const ROLEMAP_KEY="moon_light_discord_role_map_v1";
 function mlGetIdentity(){try{return JSON.parse(localStorage.getItem(IDENTITY_KEY)||"null")}catch(e){return null}}
 function mlSetIdentity(id){localStorage.setItem(IDENTITY_KEY,JSON.stringify(id))}
 function mlClearIdentity(){localStorage.removeItem(IDENTITY_KEY)}
-function mlGetRoleMap(){try{return JSON.parse(localStorage.getItem(ROLEMAP_KEY)||"{}")}catch(e){return{}}}
-function mlSaveRoleMap(m){localStorage.setItem(ROLEMAP_KEY,JSON.stringify(m))}
-/* Looks up the role a real Discord role-sync bot would have assigned, keyed by Discord ID or username. */
-function mlAutoRole(discordKey){const m=mlGetRoleMap();return m[(discordKey||"").trim().toLowerCase()]||""}
+/* Role lookup now uses server-side table-based system only */
+async function mlAutoRole(discordKey){
+  try{
+    const response=await fetch("/api/auth/role");
+    if(response.ok){
+      const data=await response.json();
+      if(data.ok && data.roleId && data.roleId!=='PLAYER'){
+        return data.roleId;
+      }
+    }
+  }catch(e){
+    console.error("Failed to fetch role from server:",e);
+  }
+  return "";
+}
 
 /* ---------- FiveM Server Status (SIMULATED) ----------
    A real integration would poll the FiveM server's /players.json or a txAdmin API on an interval.
@@ -226,18 +236,73 @@ function mlGetServerStatus(){
 }
 function mlSaveServerStatus(s){s.lastSync=new Date().toISOString();localStorage.setItem(SERVERSTATUS_KEY,JSON.stringify(s))}
 
-/* ---------- Tickets (Application → Discord Ticket, SIMULATED) ---------- */
-const TICKETS_KEY="moon_light_tickets_v1";
-function mlGetTickets(){try{return JSON.parse(localStorage.getItem(TICKETS_KEY)||"[]")}catch(e){return[]}}
-function mlSaveTickets(all){localStorage.setItem(TICKETS_KEY,JSON.stringify(all))}
-function mlCreateTicket(type,discord,characterName){
-  const all=mlGetTickets();
+/* ---------- Tickets (Application → Discord Ticket, API-based) ---------- */
+async function mlGetTickets(){
+  try{
+    const response=await fetch("/api/tickets");
+    if(response.ok){
+      const data=await response.json();
+      return data.tickets||[];
+    }
+  }catch(e){
+    console.error("Failed to fetch tickets from API:",e);
+  }
+  // Fallback to localStorage if API fails
+  try{return JSON.parse(localStorage.getItem("moon_light_tickets_v1")||"[]")}catch(e){return[]}
+}
+async function mlSaveTickets(all){
+  // This function is kept for compatibility but no longer used
+  // The API handles persistence to the database
+  localStorage.setItem("moon_light_tickets_v1",JSON.stringify(all));
+}
+async function mlCreateTicket(type,discord,characterName){
+  try{
+    const response=await fetch("/api/tickets",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({type,character_name:characterName})
+    });
+    if(response.ok){
+      const data=await response.json();
+      const t=data.ticket;
+      mlPushDiscordLog("ticket",`Ticket ${t.channel} opened`,`${characterName||"Applicant"} (${discord||"—"}) — ${type} application`);
+      return t;
+    }
+  }catch(e){
+    console.error("Failed to create ticket via API:",e);
+  }
+  // Fallback to localStorage if API fails
+  const all=await mlGetTickets();
   const num=String(all.length+1).padStart(4,"0");
   const t={id:mlUid(),channel:`#app-ticket-${num}`,type,discord,characterName,status:"open",created:new Date().toISOString()};
   all.unshift(t);
-  mlSaveTickets(all);
+  await mlSaveTickets(all);
   mlPushDiscordLog("ticket",`Ticket ${t.channel} opened`,`${characterName||"Applicant"} (${discord||"—"}) — ${type} application`);
   return t;
+}
+async function mlUpdateTicketStatus(id,status){
+  try{
+    const response=await fetch(`/api/tickets/${id}/status`,{
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({status})
+    });
+    if(response.ok){
+      const data=await response.json();
+      return data.ticket;
+    }
+  }catch(e){
+    console.error("Failed to update ticket status via API:",e);
+  }
+  // Fallback to localStorage if API fails
+  const all=await mlGetTickets();
+  const t=all.find(x=>x.id===id);
+  if(t){
+    t.status=status;
+    await mlSaveTickets(all);
+    return t;
+  }
+  return null;
 }
 
 /* ---------- Discord Activity Log (SIMULATED) ----------
