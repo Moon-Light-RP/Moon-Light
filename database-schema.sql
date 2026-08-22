@@ -395,6 +395,15 @@ CREATE TABLE IF NOT EXISTS server_status (
   last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Key-Value Storage Table (ml_store)
+CREATE TABLE IF NOT EXISTS ml_store (
+  id SERIAL PRIMARY KEY,
+  key VARCHAR(255) UNIQUE NOT NULL,
+  value TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_applications_discord_id ON applications(discord_id);
 CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
@@ -414,7 +423,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_area ON audit_logs(area);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_staff_roles_discord_id ON staff_roles(discord_id);
-CREATE INDEX IF NOT EXISTS idx_staff_roles_role ON staff_roles(role_id);
+CREATE INDEX IF NOT EXISTS idx_staff_roles_role_id ON staff_roles(role_id);
 
 CREATE INDEX IF NOT EXISTS idx_police_members_discord_id ON police_members(discord_id);
 CREATE INDEX IF NOT EXISTS idx_police_members_status ON police_members(status);
@@ -423,6 +432,7 @@ CREATE INDEX IF NOT EXISTS idx_ems_members_discord_id ON ems_members(discord_id)
 CREATE INDEX IF NOT EXISTS idx_ems_members_status ON ems_members(status);
 
 CREATE INDEX IF NOT EXISTS idx_users_discord_id ON users(discord_id);
+CREATE INDEX IF NOT EXISTS idx_ml_store_key ON ml_store(key);
 
 -- Trigger for updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -458,6 +468,9 @@ CREATE TRIGGER update_content_management_updated_at BEFORE UPDATE ON content_man
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_department_notices_updated_at BEFORE UPDATE ON department_notices
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_ml_store_updated_at BEFORE UPDATE ON ml_store
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Initial server status
