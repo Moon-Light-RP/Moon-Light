@@ -265,7 +265,8 @@ const PUBLIC_STORE_KEYS = new Set([
   'moon_light_notices_v1',
   'moon_light_streamers_v1',
   'moon_light_server_status_v1',
-  'moon_light_ranks_v1'
+  'moon_light_ranks_v1',
+  'moon_light_store_products_v1'
 ]);
 
 app.get('/api/store', async (req, res) => {
@@ -755,7 +756,7 @@ async function getRolePermissions(roleId) {
           'announcements.manage', 'notifications.view', 'notifications.manage', 'audit.view',
           'audit.delete', 'settings.view', 'settings.manage', 'police.view', 'police.manage',
           'ems.view', 'ems.manage', 'streamers.view', 'streamers.manage', 'permissions.view',
-          'permissions.manage'
+          'permissions.manage', 'store.view', 'store.manage'
         ];
       }
     }
@@ -1506,6 +1507,216 @@ app.get('/api/auth/role', async (req, res) => {
     });
   } catch (error) {
     console.error('Auth role error:', error);
+    res.status(503).json({ ok: false, error: error.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Store Products API
+// -----------------------------------------------------------------------------
+
+// Get all products (public)
+app.get('/api/store-products', async (req, res) => {
+  try {
+    const response = await supabaseRequest('ml_store?key=eq.moon_light_store_products_v1&select=value');
+    
+    if (response && response.length > 0) {
+      const products = typeof response[0].value === 'string' 
+        ? JSON.parse(response[0].value) 
+        : response[0].value;
+      
+      res.json({ ok: true, products: Array.isArray(products) ? products : [] });
+    } else {
+      res.json({ ok: true, products: [] });
+    }
+  } catch (error) {
+    console.error('Error fetching store products:', error);
+    res.status(503).json({ ok: false, error: error.message });
+  }
+});
+
+// Add product (Management only)
+app.post('/api/store-products', requireDiscordUser, async (req, res) => {
+  try {
+    const discordId = req.session.discordUser.id;
+    const roleId = await getUserRole(discordId);
+    
+    // Check if user is Management
+    if (roleId !== 'MANAGEMENT_ROLE_ID') {
+      return res.status(403).json({ ok: false, error: 'Management only' });
+    }
+    
+    const response = await supabaseRequest('ml_store?key=eq.moon_light_store_products_v1&select=value');
+    let products = [];
+    
+    if (response && response.length > 0) {
+      products = typeof response[0].value === 'string' 
+        ? JSON.parse(response[0].value) 
+        : response[0].value;
+      products = Array.isArray(products) ? products : [];
+    }
+    
+    const newProduct = {
+      id: Date.now(),
+      ...req.body
+    };
+    
+    products.push(newProduct);
+    
+    await supabaseRequest('ml_store', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({
+        key: 'moon_light_store_products_v1',
+        value: JSON.stringify(products)
+      })
+    });
+    
+    // Log to audit logs
+    await supabaseRequest('audit_logs', {
+      method: 'POST',
+      body: JSON.stringify({
+        discord_id: discordId,
+        discord_username: req.session.discordUser.username,
+        area: 'Store',
+        action: 'Product Added',
+        target: newProduct.name,
+        target_type: 'product',
+        details: `Added product: ${newProduct.name} ($${newProduct.price})`,
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent']
+      })
+    });
+    
+    res.json({ ok: true, product: newProduct });
+  } catch (error) {
+    console.error('Error adding store product:', error);
+    res.status(503).json({ ok: false, error: error.message });
+  }
+});
+
+// Update product (Management only)
+app.put('/api/store-products/:id', requireDiscordUser, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const discordId = req.session.discordUser.id;
+    const roleId = await getUserRole(discordId);
+    
+    // Check if user is Management
+    if (roleId !== 'MANAGEMENT_ROLE_ID') {
+      return res.status(403).json({ ok: false, error: 'Management only' });
+    }
+    
+    const response = await supabaseRequest('ml_store?key=eq.moon_light_store_products_v1&select=value');
+    
+    if (!response || response.length === 0) {
+      return res.status(404).json({ ok: false, error: 'Products not found' });
+    }
+    
+    let products = typeof response[0].value === 'string' 
+      ? JSON.parse(response[0].value) 
+      : response[0].value;
+    products = Array.isArray(products) ? products : [];
+    
+    const index = products.findIndex(p => p.id === parseInt(id));
+    if (index === -1) {
+      return res.status(404).json({ ok: false, error: 'Product not found' });
+    }
+    
+    const oldProduct = products[index];
+    products[index] = { ...products[index], ...req.body, id: parseInt(id) };
+    
+    await supabaseRequest('ml_store', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({
+        key: 'moon_light_store_products_v1',
+        value: JSON.stringify(products)
+      })
+    });
+    
+    // Log to audit logs
+    await supabaseRequest('audit_logs', {
+      method: 'POST',
+      body: JSON.stringify({
+        discord_id: discordId,
+        discord_username: req.session.discordUser.username,
+        area: 'Store',
+        action: 'Product Updated',
+        target: products[index].name,
+        target_type: 'product',
+        details: `Updated product: ${products[index].name}`,
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent']
+      })
+    });
+    
+    res.json({ ok: true, product: products[index] });
+  } catch (error) {
+    console.error('Error updating store product:', error);
+    res.status(503).json({ ok: false, error: error.message });
+  }
+});
+
+// Delete product (Management only)
+app.delete('/api/store-products/:id', requireDiscordUser, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const discordId = req.session.discordUser.id;
+    const roleId = await getUserRole(discordId);
+    
+    // Check if user is Management
+    if (roleId !== 'MANAGEMENT_ROLE_ID') {
+      return res.status(403).json({ ok: false, error: 'Management only' });
+    }
+    
+    const response = await supabaseRequest('ml_store?key=eq.moon_light_store_products_v1&select=value');
+    
+    if (!response || response.length === 0) {
+      return res.status(404).json({ ok: false, error: 'Products not found' });
+    }
+    
+    let products = typeof response[0].value === 'string' 
+      ? JSON.parse(response[0].value) 
+      : response[0].value;
+    products = Array.isArray(products) ? products : [];
+    
+    const index = products.findIndex(p => p.id === parseInt(id));
+    if (index === -1) {
+      return res.status(404).json({ ok: false, error: 'Product not found' });
+    }
+    
+    const deletedProduct = products[index];
+    products = products.filter(p => p.id !== parseInt(id));
+    
+    await supabaseRequest('ml_store', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({
+        key: 'moon_light_store_products_v1',
+        value: JSON.stringify(products)
+      })
+    });
+    
+    // Log to audit logs
+    await supabaseRequest('audit_logs', {
+      method: 'POST',
+      body: JSON.stringify({
+        discord_id: discordId,
+        discord_username: req.session.discordUser.username,
+        area: 'Store',
+        action: 'Product Deleted',
+        target: deletedProduct.name,
+        target_type: 'product',
+        details: `Deleted product: ${deletedProduct.name} ($${deletedProduct.price})`,
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent']
+      })
+    });
+    
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Error deleting store product:', error);
     res.status(503).json({ ok: false, error: error.message });
   }
 });

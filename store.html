@@ -255,132 +255,145 @@
 <footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
 
 <script>
-const products = [
-    {
-        id: 1,
-        name: "Sports Car - GT",
-        category: "vehicles",
-        price: 25,
-        description: "High-performance sports car with custom handling and tuning options.",
-        badge: "Popular"
-    },
-    {
-        id: 2,
-        name: "Luxury Sedan",
-        category: "vehicles",
-        price: 15,
-        description: "Premium luxury sedan with elegant design and comfort features."
-    },
-    {
-        id: 3,
-        name: "Off-Road Truck",
-        category: "vehicles",
-        price: 20,
-        description: "Rugged off-road vehicle perfect for exploration and tough terrain."
-    },
-    {
-        id: 4,
-        name: "Supercar - Limited",
-        category: "vehicles",
-        price: 50,
-        description: "Limited edition supercar with exclusive customization options.",
-        badge: "Limited"
-    },
-    {
-        id: 5,
-        name: "Police Special Unit",
-        category: "vehicles",
-        price: 30,
-        description: "Special police vehicle with advanced equipment and siren system.",
-        badge: "Police Only"
-    },
-    {
-        id: 6,
-        name: "EMS Response Vehicle",
-        category: "vehicles",
-        price: 25,
-        description: "Emergency medical services vehicle with medical equipment.",
-        badge: "EMS Only"
-    },
-    {
-        id: 7,
-        name: "Business Suit",
-        category: "clothing",
-        price: 10,
-        description: "Professional business suit with multiple color variations."
-    },
-    {
-        id: 8,
-        name: "Casual Outfit Pack",
-        category: "clothing",
-        price: 15,
-        description: "Collection of casual clothing items for everyday wear."
-    },
-    {
-        id: 9,
-        name: "Tactical Gear",
-        category: "clothing",
-        price: 20,
-        description: "Military-style tactical clothing with armor and equipment slots.",
-        badge: "Police Only"
-    },
-    {
-        id: 10,
-        name: "Medical Uniform",
-        category: "clothing",
-        price: 10,
-        description: "Professional EMS uniform with medical insignia.",
-        badge: "EMS Only"
-    },
-    {
-        id: 11,
-        name: "Custom Character Model",
-        category: "peds",
-        price: 35,
-        description: "Unique character model with custom animations and features.",
-        badge: "Premium"
-    },
-    {
-        id: 12,
-        name: "Celebrity Lookalike",
-        category: "peds",
-        price: 25,
-        description: "Character model based on popular celebrity appearance."
-    },
-    {
-        id: 13,
-        name: "Restaurant Business",
-        category: "businesses",
-        price: 100,
-        description: "Own and operate a restaurant with full kitchen and dining area.",
-        badge: "Premium"
-    },
-    {
-        id: 14,
-        name: "Mechanic Shop",
-        category: "businesses",
-        price: 80,
-        description: "Full-service mechanic shop with vehicle repair and customization.",
-        badge: "Popular"
-    },
-    {
-        id: 15,
-        name: "Nightclub",
-        category: "businesses",
-        price: 150,
-        description: "Premium nightclub venue with bar, dance floor, and VIP areas.",
-        badge: "Limited"
-    },
-    {
-        id: 16,
-        name: "Car Dealership",
-        category: "businesses",
-        price: 120,
-        description: "Vehicle dealership with showroom and service center."
-    }
-];
-
+let products = [];
 let currentCategory = 'all';
+
+async function loadProducts() {
+    try {
+        const response = await fetch('/api/store-products');
+        const data = await response.json();
+        if (data.ok) {
+            products = data.products || [];
+        }
+    } catch (e) {
+        console.error('Error loading products:', e);
+        // Fallback to sample products if API fails
+        products = [
+            {
+                id: 1,
+                name: "Sports Car - GT",
+                category: "vehicles",
+                price: 25,
+                description: "High-performance sports car with custom handling and tuning options.",
+                badge: "Popular"
+            },
+            {
+                id: 2,
+                name: "Luxury Sedan",
+                category: "vehicles",
+                price: 15,
+                description: "Premium luxury sedan with elegant design and comfort features."
+            },
+            {
+                id: 3,
+                name: "Off-Road Truck",
+                category: "vehicles",
+                price: 20,
+                description: "Rugged off-road vehicle perfect for exploration and tough terrain."
+            },
+            {
+                id: 4,
+                name: "Supercar - Limited",
+                category: "vehicles",
+                price: 50,
+                description: "Limited edition supercar with exclusive customization options.",
+                badge: "Limited"
+            },
+            {
+                id: 5,
+                name: "Police Special Unit",
+                category: "vehicles",
+                price: 30,
+                description: "Special police vehicle with advanced equipment and siren system.",
+                badge: "Police Only"
+            },
+            {
+                id: 6,
+                name: "EMS Response Vehicle",
+                category: "vehicles",
+                price: 25,
+                description: "Emergency medical services vehicle with medical equipment.",
+                badge: "EMS Only"
+            },
+            {
+                id: 7,
+                name: "Business Suit",
+                category: "clothing",
+                price: 10,
+                description: "Professional business suit with multiple color variations."
+            },
+            {
+                id: 8,
+                name: "Casual Outfit Pack",
+                category: "clothing",
+                price: 15,
+                description: "Collection of casual clothing items for everyday wear."
+            },
+            {
+                id: 9,
+                name: "Tactical Gear",
+                category: "clothing",
+                price: 20,
+                description: "Military-style tactical clothing with armor and equipment slots.",
+                badge: "Police Only"
+            },
+            {
+                id: 10,
+                name: "Medical Uniform",
+                category: "clothing",
+                price: 10,
+                description: "Professional EMS uniform with medical insignia.",
+                badge: "EMS Only"
+            },
+            {
+                id: 11,
+                name: "Custom Character Model",
+                category: "peds",
+                price: 35,
+                description: "Unique character model with custom animations and features.",
+                badge: "Premium"
+            },
+            {
+                id: 12,
+                name: "Celebrity Lookalike",
+                category: "peds",
+                price: 25,
+                description: "Character model based on popular celebrity appearance."
+            },
+            {
+                id: 13,
+                name: "Restaurant Business",
+                category: "businesses",
+                price: 100,
+                description: "Own and operate a restaurant with full kitchen and dining area.",
+                badge: "Premium"
+            },
+            {
+                id: 14,
+                name: "Mechanic Shop",
+                category: "businesses",
+                price: 80,
+                description: "Full-service mechanic shop with vehicle repair and customization.",
+                badge: "Popular"
+            },
+            {
+                id: 15,
+                name: "Nightclub",
+                category: "businesses",
+                price: 150,
+                description: "Premium nightclub venue with bar, dance floor, and VIP areas.",
+                badge: "Limited"
+            },
+            {
+                id: 16,
+                name: "Car Dealership",
+                category: "businesses",
+                price: 120,
+                description: "Vehicle dealership with showroom and service center."
+            }
+        ];
+    }
+}
 
 function renderProducts(category) {
     const grid = document.getElementById('productsGrid');
@@ -397,7 +410,7 @@ function renderProducts(category) {
         <div class="product-card">
             <div class="product-image">
                 ${product.badge ? `<span class="product-badge">${product.badge}</span>` : ''}
-                <span>📦</span>
+                ${product.image ? `<img src="${product.image}" alt="${product.name}">` : '<span>📦</span>'}
             </div>
             <div class="product-info">
                 <div class="product-category">${product.category}</div>
@@ -425,7 +438,8 @@ function setupCategoryTabs() {
 }
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadProducts();
     renderProducts('all');
     setupCategoryTabs();
 });

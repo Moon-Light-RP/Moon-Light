@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Store Management | MOON LIGHT</title>
+<link rel="stylesheet" href="assets/ml-complete.css">
+<link rel="stylesheet" href="assets/responsive.css">
+<style>
+.staff-panel-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.staff-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.staff-panel-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #f3f5fb;
+    margin: 0;
+}
+
+.staff-panel-subtitle {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.role-message {
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    font-size: 14px;
+}
+
+.role-message.granted {
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid #dc2626;
+    color: #ef4444;
+}
+
+.role-message.denied {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    color: #f87171;
+}
+
+.role-message.loading {
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid #dc2626;
+    color: #dc2626;
+}
+
+.action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 12px 16px;
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 8px;
+    color: #f3f5fb;
+    font-size: 14px;
+    outline: none;
+}
+
+.search-input:focus {
+    border-color: #dc2626;
+}
+
+.filter-select {
+    padding: 12px 16px;
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 8px;
+    color: #f3f5fb;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+}
+
+.add-btn {
+    padding: 12px 24px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.add-btn:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+}
+
+.products-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.products-table th {
+    background: #1a1f2e;
+    color: #f3f5fb;
+    font-weight: 600;
+    padding: 16px;
+    text-align: left;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.products-table td {
+    padding: 16px;
+    border-bottom: 1px solid #1d2331;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.products-table tr:last-child td {
+    border-bottom: none;
+}
+
+.products-table tr:hover {
+    background: rgba(220, 38, 38, 0.05);
+}
+
+.product-thumbnail {
+    width: 60px;
+    height: 60px;
+    background: #1a1f2e;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 24px;
+    overflow: hidden;
+}
+
+.product-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.category-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #7f1d1d;
+    color: #ef4444;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-tag {
+    display: inline-block;
+    padding: 4px 8px;
+    background: #1a1f2e;
+    color: #94a3b8;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-right: 4px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.action-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.edit-btn {
+    background: #3b82f6;
+    color: white;
+}
+
+.edit-btn:hover {
+    background: #2563eb;
+}
+
+.delete-btn {
+    background: #ef4444;
+    color: white;
+}
+
+.delete-btn:hover {
+    background: #dc2626;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #f3f5fb;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.modal-close:hover {
+    color: #f3f5fb;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+    width: 100%;
+    padding: 12px 16px;
+    background: #080b12;
+    border: 1px solid #1d2331;
+    border-radius: 8px;
+    color: #f3f5fb;
+    font-size: 14px;
+    outline: none;
+    font-family: inherit;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+    border-color: #dc2626;
+}
+
+.form-textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.image-upload {
+    border: 2px dashed #1d2331;
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.image-upload:hover {
+    border-color: #dc2626;
+}
+
+.image-upload-preview {
+    width: 100%;
+    max-width: 200px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-top: 12px;
+    display: none;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+}
+
+.cancel-btn {
+    padding: 12px 24px;
+    background: transparent;
+    border: 1px solid #1d2331;
+    color: #94a3b8;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.cancel-btn:hover {
+    border-color: #dc2626;
+    color: #f3f5fb;
+}
+
+.save-btn {
+    padding: 12px 24px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.save-btn:hover {
+    background: #dc2626;
+}
+
+.no-products {
+    text-align: center;
+    padding: 60px 20px;
+    color: #94a3b8;
+}
+
+@media (max-width: 768px) {
+    .action-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .products-table {
+        display: block;
+        overflow-x: auto;
+    }
+}
+</style>
+</head>
+<body class="ml-page">
+<header class="ml-nav">
+  <a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+  <nav class="ml-navlinks">
+    <a href="index.html">Home</a>
+    <a href="rules.html">Rules</a>
+    <a href="store.html">Store</a>
+    <a href="application.html">Application</a>
+    <a href="player.html">Dashboard</a>
+    <a href="staff-panel.html">Staff Panel</a>
+    <a class="btn small" href="login.html">Login</a>
+  </nav>
+</header>
+
+<main class="ml-container">
+<div class="staff-panel-container">
+    <div class="staff-panel-header">
+        <div>
+            <h1 class="staff-panel-title">Store Management</h1>
+            <p class="staff-panel-subtitle">Add, edit, and delete store products - Management only access.</p>
+        </div>
+    </div>
+    
+    <div id="lock" class="role-message loading">Checking permission...</div>
+    
+    <div id="content" style="display:none">
+        <div class="action-bar">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search products...">
+            <select class="filter-select" id="categoryFilter">
+                <option value="all">All Categories</option>
+                <option value="vehicles">Vehicles</option>
+                <option value="clothing">Clothing</option>
+                <option value="peds">Character Models</option>
+                <option value="businesses">Businesses</option>
+            </select>
+            <button class="add-btn" id="addProductBtn">+ Add Product</button>
+        </div>
+        
+        <table class="products-table">
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Badge</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="productsTableBody">
+            </tbody>
+        </table>
+    </div>
+</div>
+</main>
+
+<!-- Add/Edit Product Modal -->
+<div class="modal" id="productModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modalTitle">Add Product</h2>
+            <button class="modal-close" id="modalClose">&times;</button>
+        </div>
+        <form id="productForm">
+            <input type="hidden" id="productId">
+            
+            <div class="form-group">
+                <label class="form-label">Product Name</label>
+                <input type="text" class="form-input" id="productName" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="productCategory" required>
+                    <option value="vehicles">Vehicles</option>
+                    <option value="clothing">Clothing</option>
+                    <option value="peds">Character Models</option>
+                    <option value="businesses">Businesses</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Price ($)</label>
+                <input type="number" class="form-input" id="productPrice" min="0" step="0.01" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" id="productDescription" required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Badge (optional)</label>
+                <input type="text" class="form-input" id="productBadge" placeholder="e.g., Popular, Limited, Premium">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Image URL</label>
+                <input type="url" class="form-input" id="productImage" placeholder="https://...">
+                <div class="image-upload" id="imageUploadArea">
+                    <span>📷 Click to upload image</span>
+                    <input type="file" id="imageFileInput" accept="image/*" style="display:none">
+                </div>
+                <img class="image-upload-preview" id="imagePreview">
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>
+                <button type="submit" class="save-btn">Save Product</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+
+<script src="assets/portal.js"></script>
+<script>
+const lock = document.getElementById('lock');
+const content = document.getElementById('content');
+const productsTableBody = document.getElementById('productsTableBody');
+const searchInput = document.getElementById('searchInput');
+const categoryFilter = document.getElementById('categoryFilter');
+const addProductBtn = document.getElementById('addProductBtn');
+const productModal = document.getElementById('productModal');
+const modalTitle = document.getElementById('modalTitle');
+const modalClose = document.getElementById('modalClose');
+const cancelBtn = document.getElementById('cancelBtn');
+const productForm = document.getElementById('productForm');
+const imageUploadArea = document.getElementById('imageUploadArea');
+const imageFileInput = document.getElementById('imageFileInput');
+const imagePreview = document.getElementById('imagePreview');
+
+let products = [];
+let editingProductId = null;
+
+async function initStoreManagement() {
+    try {
+        const hasStorePerm = await mlHasPerm('Store');
+        
+        if (!hasStorePerm) {
+            lock.className = 'role-message denied';
+            lock.innerHTML = 'Access denied. This area requires Management permission.';
+            content.style.display = 'none';
+            return;
+        }
+        
+        const roleName = await mlGetRoleName();
+        const displayRoleName = typeof roleName === 'string' ? roleName : 'Player';
+        
+        lock.className = 'role-message granted';
+        lock.innerHTML = `Store Management Access Granted. Your role: ${displayRoleName}`;
+        content.style.display = 'block';
+        
+        await loadProducts();
+        renderProducts();
+    } catch (e) {
+        console.error('Error initializing store management:', e);
+        lock.className = 'role-message denied';
+        lock.innerHTML = 'Error loading store management: ' + e.message;
+        content.style.display = 'none';
+    }
+}
+
+async function loadProducts() {
+    try {
+        const response = await fetch('/api/store-products');
+        const data = await response.json();
+        if (data.ok) {
+            products = data.products || [];
+        }
+    } catch (e) {
+        console.error('Error loading products:', e);
+        // Use local storage as fallback
+        const stored = localStorage.getItem('moon_light_store_products');
+        if (stored) {
+            products = JSON.parse(stored);
+        }
+    }
+}
+
+function renderProducts() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const category = categoryFilter.value;
+    
+    let filtered = products;
+    
+    if (searchTerm) {
+        filtered = filtered.filter(p => 
+            p.name.toLowerCase().includes(searchTerm) ||
+            p.description.toLowerCase().includes(searchTerm)
+        );
+    }
+    
+    if (category !== 'all') {
+        filtered = filtered.filter(p => p.category === category);
+    }
+    
+    if (filtered.length === 0) {
+        productsTableBody.innerHTML = '<tr><td colspan="6" class="no-products">No products found.</td></tr>';
+        return;
+    }
+    
+    productsTableBody.innerHTML = filtered.map(product => `
+        <tr>
+            <td>
+                <div class="product-thumbnail">
+                    ${product.image ? `<img src="${product.image}" alt="${product.name}">` : '📦'}
+                </div>
+            </td>
+            <td><strong>${product.name}</strong></td>
+            <td><span class="category-badge">${product.category}</span></td>
+            <td>$${product.price}</td>
+            <td>${product.badge ? `<span class="badge-tag">${product.badge}</span>` : '—'}</td>
+            <td>
+                <div class="action-buttons">
+                    <button class="action-btn edit-btn" onclick="editProduct(${product.id})">Edit</button>
+                    <button class="action-btn delete-btn" onclick="deleteProduct(${product.id})">Delete</button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function openModal(isEdit = false) {
+    modalTitle.textContent = isEdit ? 'Edit Product' : 'Add Product';
+    productModal.classList.add('active');
+}
+
+function closeModal() {
+    productModal.classList.remove('active');
+    productForm.reset();
+    editingProductId = null;
+    imagePreview.style.display = 'none';
+    imagePreview.src = '';
+}
+
+function editProduct(id) {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+    
+    editingProductId = id;
+    document.getElementById('productId').value = id;
+    document.getElementById('productName').value = product.name;
+    document.getElementById('productCategory').value = product.category;
+    document.getElementById('productPrice').value = product.price;
+    document.getElementById('productDescription').value = product.description;
+    document.getElementById('productBadge').value = product.badge || '';
+    document.getElementById('productImage').value = product.image || '';
+    
+    if (product.image) {
+        imagePreview.src = product.image;
+        imagePreview.style.display = 'block';
+    }
+    
+    openModal(true);
+}
+
+async function deleteProduct(id) {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+    
+    try {
+        const response = await fetch(`/api/store-products/${id}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            products = products.filter(p => p.id !== id);
+            saveProducts();
+            renderProducts();
+        } else {
+            alert('Failed to delete product');
+        }
+    } catch (e) {
+        console.error('Error deleting product:', e);
+        // Fallback to local
+        products = products.filter(p => p.id !== id);
+        saveProducts();
+        renderProducts();
+    }
+}
+
+async function saveProduct(e) {
+    e.preventDefault();
+    
+    const productData = {
+        name: document.getElementById('productName').value,
+        category: document.getElementById('productCategory').value,
+        price: parseFloat(document.getElementById('productPrice').value),
+        description: document.getElementById('productDescription').value,
+        badge: document.getElementById('productBadge').value,
+        image: document.getElementById('productImage').value
+    };
+    
+    try {
+        const url = editingProductId 
+            ? `/api/store-products/${editingProductId}`
+            : '/api/store-products';
+        
+        const method = editingProductId ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(productData)
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (editingProductId) {
+                const index = products.findIndex(p => p.id === editingProductId);
+                if (index !== -1) {
+                    products[index] = { ...products[index], ...productData };
+                }
+            } else {
+                productData.id = data.id || Date.now();
+                products.push(productData);
+            }
+            
+            saveProducts();
+            renderProducts();
+            closeModal();
+        } else {
+            alert('Failed to save product');
+        }
+    } catch (e) {
+        console.error('Error saving product:', e);
+        // Fallback to local
+        if (editingProductId) {
+            const index = products.findIndex(p => p.id === editingProductId);
+            if (index !== -1) {
+                products[index] = { ...products[index], ...productData };
+            }
+        } else {
+            productData.id = Date.now();
+            products.push(productData);
+        }
+        
+        saveProducts();
+        renderProducts();
+        closeModal();
+    }
+}
+
+function saveProducts() {
+    localStorage.setItem('moon_light_store_products', JSON.stringify(products));
+}
+
+// Event listeners
+addProductBtn.addEventListener('click', () => openModal(false));
+modalClose.addEventListener('click', closeModal);
+cancelBtn.addEventListener('click', closeModal);
+productForm.addEventListener('submit', saveProduct);
+searchInput.addEventListener('input', renderProducts);
+categoryFilter.addEventListener('change', renderProducts);
+
+imageUploadArea.addEventListener('click', () => imageFileInput.click());
+imageFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            imagePreview.src = e.target.result;
+            imagePreview.style.display = 'block';
+            document.getElementById('productImage').value = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Close modal on outside click
+productModal.addEventListener('click', (e) => {
+    if (e.target === productModal) {
+        closeModal();
+    }
+});
+
+// Initialize
+initStoreManagement();
+</script>
+</body>
+</html>
