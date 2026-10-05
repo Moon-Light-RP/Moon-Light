@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="assets/responsive.css">
 <style>
 .staff-panel-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
 }
@@ -33,36 +33,75 @@
     margin-top: 8px;
 }
 
-.store-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 24px;
-    margin-top: 24px;
+.category-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
 }
 
-.store-card {
+.category-tab {
+    padding: 12px 24px;
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 8px;
+    color: #94a3b8;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.category-tab:hover {
+    border-color: #dc2626;
+    color: #f3f5fb;
+}
+
+.category-tab.active {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: white;
+}
+
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+}
+
+.product-card {
     background: #0c0f17;
     border: 1px solid #1d2331;
     border-radius: 16px;
-    padding: 32px;
-    transition: all 0.3s ease;
-    position: relative;
     overflow: hidden;
+    transition: all 0.3s ease;
 }
 
-.store-card:hover {
+.product-card:hover {
     border-color: #dc2626;
     transform: translateY(-4px);
     box-shadow: 0 12px 40px rgba(220, 38, 38, 0.15);
 }
 
-.store-card.featured {
-    border-color: #ef4444;
-    background: linear-gradient(180deg, rgba(239, 68, 68, 0.08) 0%, #0c0f17 100%);
+.product-image {
+    width: 100%;
+    height: 200px;
+    background: linear-gradient(135deg, #1a1f2e 0%, #0c0f17 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 48px;
+    position: relative;
 }
 
-.store-card.featured::before {
-    content: 'MOST POPULAR';
+.product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.product-badge {
     position: absolute;
     top: 12px;
     right: 12px;
@@ -70,92 +109,79 @@
     color: white;
     font-size: 10px;
     font-weight: 700;
-    padding: 4px 12px;
-    border-radius: 20px;
+    padding: 4px 10px;
+    border-radius: 6px;
     letter-spacing: 0.5px;
 }
 
-.tier-name {
-    font-size: 24px;
-    font-weight: 700;
-    color: #f3f5fb;
+.product-info {
+    padding: 20px;
+}
+
+.product-category {
+    color: #ef4444;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     margin-bottom: 8px;
 }
 
-.tier-price {
-    font-size: 48px;
+.product-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f3f5fb;
+    margin: 0 0 8px 0;
+}
+
+.product-description {
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 16px;
+    min-height: 40px;
+}
+
+.product-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid #1d2331;
+}
+
+.product-price {
+    font-size: 24px;
     font-weight: 800;
     color: #ef4444;
-    margin-bottom: 4px;
 }
 
-.tier-price span {
-    font-size: 18px;
-    font-weight: 500;
-    color: #94a3b8;
-}
-
-.tier-description {
-    color: #94a3b8;
-    font-size: 14px;
-    margin-bottom: 24px;
-    line-height: 1.6;
-}
-
-.benefits-list {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 24px 0;
-}
-
-.benefits-list li {
-    color: #f3f5fb;
-    font-size: 14px;
-    padding: 8px 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.benefits-list li::before {
-    content: '✓';
-    color: #ef4444;
-    font-weight: 700;
-    font-size: 16px;
-}
-
-.donate-btn {
-    width: 100%;
-    padding: 14px 24px;
+.product-purchase-btn {
+    padding: 10px 20px;
     background: #ef4444;
     color: white;
     border: none;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
     text-decoration: none;
     display: inline-block;
-    text-align: center;
 }
 
-.donate-btn:hover {
+.product-purchase-btn:hover {
     background: #dc2626;
     transform: translateY(-2px);
 }
 
-.donate-btn.secondary {
-    background: transparent;
-    border: 2px solid #ef4444;
-    color: #ef4444;
+.no-products {
+    text-align: center;
+    padding: 60px 20px;
+    color: #94a3b8;
 }
 
-.donate-btn.secondary:hover {
-    background: rgba(239, 68, 68, 0.1);
-}
-
-.disclaimer {
+.purchase-info {
     background: rgba(239, 68, 68, 0.08);
     border: 1px solid rgba(239, 68, 68, 0.2);
     border-radius: 12px;
@@ -166,8 +192,23 @@
     line-height: 1.6;
 }
 
-.disclaimer strong {
+.purchase-info strong {
     color: #ef4444;
+}
+
+@media (max-width: 768px) {
+    .products-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .category-tabs {
+        gap: 8px;
+    }
+    
+    .category-tab {
+        padding: 10px 16px;
+        font-size: 12px;
+    }
 }
 </style>
 </head>
@@ -188,78 +229,206 @@
 <div class="staff-panel-container">
     <div class="staff-panel-header">
         <div>
-            <h1 class="staff-panel-title">Support MOON LIGHT</h1>
-            <p class="staff-panel-subtitle">Your donations help keep our server running and improve the community experience for everyone.</p>
+            <h1 class="staff-panel-title">Server Store</h1>
+            <p class="staff-panel-subtitle">Purchase vehicles, clothing, character models, and businesses for your character.</p>
         </div>
     </div>
 
-    <div class="store-grid">
-        <div class="store-card">
-            <h3 class="tier-name">Supporter</h3>
-            <div class="tier-price">$5<span>/month</span></div>
-            <p class="tier-description">Perfect for players who want to show their support and get a few small perks.</p>
-            <ul class="benefits-list">
-                <li>Supporter role in Discord</li>
-                <li>Priority in support queue</li>
-                <li>Custom Discord nickname color</li>
-                <li>Supporter badge on forum</li>
-            </ul>
-            <a href="#" class="donate-btn secondary">Donate $5</a>
-        </div>
-
-        <div class="store-card featured">
-            <h3 class="tier-name">Premium</h3>
-            <div class="tier-price">$15<span>/month</span></div>
-            <p class="tier-description">Our most popular tier for dedicated players who want more from their experience.</p>
-            <ul class="benefits-list">
-                <li>All Supporter benefits</li>
-                <li>Premium Discord role</li>
-                <li>Exclusive vehicle access</li>
-                <li>Priority server queue (when full)</li>
-                <li>Monthly bonus in-game currency</li>
-                <li>Access to premium channels</li>
-            </ul>
-            <a href="#" class="donate-btn">Donate $15</a>
-        </div>
-
-        <div class="store-card">
-            <h3 class="tier-name">VIP</h3>
-            <div class="tier-price">$30<span>/month</span></div>
-            <p class="tier-description">For our most dedicated community members who want the ultimate experience.</p>
-            <ul class="benefits-list">
-                <li>All Premium benefits</li>
-                <li>VIP Discord role with special perks</li>
-                <li>Exclusive VIP vehicle pack</li>
-                <li>Custom clothing items</li>
-                <li>Priority application review</li>
-                <li>Private VIP channel access</li>
-                <li>Monthly in-game property discount</li>
-            </ul>
-            <a href="#" class="donate-btn secondary">Donate $30</a>
-        </div>
-
-        <div class="store-card">
-            <h3 class="tier-name">Lifetime</h3>
-            <div class="tier-price">$100<span>/one-time</span></div>
-            <p class="tier-description">A one-time donation for permanent Premium status and exclusive recognition.</p>
-            <ul class="benefits-list">
-                <li>Permanent Premium status</li>
-                <li>Lifetime badge on Discord</li>
-                <li>Special lifetime role</li>
-                <li>Priority in all queues</li>
-                <li>Exclusive lifetime-only events</li>
-                <li>Name on our supporters page</li>
-            </ul>
-            <a href="#" class="donate-btn secondary">Donate $100</a>
-        </div>
+    <div class="category-tabs">
+        <button class="category-tab active" data-category="all">All Items</button>
+        <button class="category-tab" data-category="vehicles">Vehicles</button>
+        <button class="category-tab" data-category="clothing">Clothing</button>
+        <button class="category-tab" data-category="peds">Character Models</button>
+        <button class="category-tab" data-category="businesses">Businesses</button>
     </div>
 
-    <div class="disclaimer">
-        <strong>Important:</strong> Donations are voluntary and help support server costs. All donation tiers are subject to our Terms of Service and may be revoked for rule violations. Donations do not grant immunity from server rules. For questions about donations, please contact staff in Discord.
+    <div class="products-grid" id="productsGrid">
+        <!-- Products will be loaded here -->
+    </div>
+
+    <div class="purchase-info">
+        <strong>How to Purchase:</strong> Click the "Purchase" button on any item to contact staff via Discord. All purchases are processed manually to ensure proper delivery to your character. Please have your character name ready when contacting staff.
     </div>
 </div>
 </main>
 
 <footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+
+<script>
+const products = [
+    {
+        id: 1,
+        name: "Sports Car - GT",
+        category: "vehicles",
+        price: 25,
+        description: "High-performance sports car with custom handling and tuning options.",
+        badge: "Popular"
+    },
+    {
+        id: 2,
+        name: "Luxury Sedan",
+        category: "vehicles",
+        price: 15,
+        description: "Premium luxury sedan with elegant design and comfort features."
+    },
+    {
+        id: 3,
+        name: "Off-Road Truck",
+        category: "vehicles",
+        price: 20,
+        description: "Rugged off-road vehicle perfect for exploration and tough terrain."
+    },
+    {
+        id: 4,
+        name: "Supercar - Limited",
+        category: "vehicles",
+        price: 50,
+        description: "Limited edition supercar with exclusive customization options.",
+        badge: "Limited"
+    },
+    {
+        id: 5,
+        name: "Police Special Unit",
+        category: "vehicles",
+        price: 30,
+        description: "Special police vehicle with advanced equipment and siren system.",
+        badge: "Police Only"
+    },
+    {
+        id: 6,
+        name: "EMS Response Vehicle",
+        category: "vehicles",
+        price: 25,
+        description: "Emergency medical services vehicle with medical equipment.",
+        badge: "EMS Only"
+    },
+    {
+        id: 7,
+        name: "Business Suit",
+        category: "clothing",
+        price: 10,
+        description: "Professional business suit with multiple color variations."
+    },
+    {
+        id: 8,
+        name: "Casual Outfit Pack",
+        category: "clothing",
+        price: 15,
+        description: "Collection of casual clothing items for everyday wear."
+    },
+    {
+        id: 9,
+        name: "Tactical Gear",
+        category: "clothing",
+        price: 20,
+        description: "Military-style tactical clothing with armor and equipment slots.",
+        badge: "Police Only"
+    },
+    {
+        id: 10,
+        name: "Medical Uniform",
+        category: "clothing",
+        price: 10,
+        description: "Professional EMS uniform with medical insignia.",
+        badge: "EMS Only"
+    },
+    {
+        id: 11,
+        name: "Custom Character Model",
+        category: "peds",
+        price: 35,
+        description: "Unique character model with custom animations and features.",
+        badge: "Premium"
+    },
+    {
+        id: 12,
+        name: "Celebrity Lookalike",
+        category: "peds",
+        price: 25,
+        description: "Character model based on popular celebrity appearance."
+    },
+    {
+        id: 13,
+        name: "Restaurant Business",
+        category: "businesses",
+        price: 100,
+        description: "Own and operate a restaurant with full kitchen and dining area.",
+        badge: "Premium"
+    },
+    {
+        id: 14,
+        name: "Mechanic Shop",
+        category: "businesses",
+        price: 80,
+        description: "Full-service mechanic shop with vehicle repair and customization.",
+        badge: "Popular"
+    },
+    {
+        id: 15,
+        name: "Nightclub",
+        category: "businesses",
+        price: 150,
+        description: "Premium nightclub venue with bar, dance floor, and VIP areas.",
+        badge: "Limited"
+    },
+    {
+        id: 16,
+        name: "Car Dealership",
+        category: "businesses",
+        price: 120,
+        description: "Vehicle dealership with showroom and service center."
+    }
+];
+
+let currentCategory = 'all';
+
+function renderProducts(category) {
+    const grid = document.getElementById('productsGrid');
+    const filteredProducts = category === 'all' 
+        ? products 
+        : products.filter(p => p.category === category);
+    
+    if (filteredProducts.length === 0) {
+        grid.innerHTML = '<div class="no-products">No products available in this category.</div>';
+        return;
+    }
+    
+    grid.innerHTML = filteredProducts.map(product => `
+        <div class="product-card">
+            <div class="product-image">
+                ${product.badge ? `<span class="product-badge">${product.badge}</span>` : ''}
+                <span>📦</span>
+            </div>
+            <div class="product-info">
+                <div class="product-category">${product.category}</div>
+                <h3 class="product-name">${product.name}</h3>
+                <p class="product-description">${product.description}</p>
+                <div class="product-footer">
+                    <div class="product-price">$${product.price}</div>
+                    <a href="https://discord.gg/E4TyrppE6q" target="_blank" class="product-purchase-btn">Purchase</a>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function setupCategoryTabs() {
+    const tabs = document.querySelectorAll('.category-tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentCategory = tab.dataset.category;
+            renderProducts(currentCategory);
+        });
+    });
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    renderProducts('all');
+    setupCategoryTabs();
+});
+</script>
 </body>
 </html>
