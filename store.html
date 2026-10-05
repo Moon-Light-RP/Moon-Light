@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Store | MOON LIGHT</title>
+<link rel="stylesheet" href="assets/ml-complete.css">
+<link rel="stylesheet" href="assets/responsive.css">
+<style>
+.staff-panel-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.staff-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.staff-panel-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: #f3f5fb;
+    margin: 0;
+}
+
+.staff-panel-subtitle {
+    color: #94a3b8;
+    font-size: 16px;
+    margin-top: 8px;
+}
+
+.store-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    margin-top: 24px;
+}
+
+.store-card {
+    background: #0c0f17;
+    border: 1px solid #1d2331;
+    border-radius: 16px;
+    padding: 32px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.store-card:hover {
+    border-color: #dc2626;
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(220, 38, 38, 0.15);
+}
+
+.store-card.featured {
+    border-color: #ef4444;
+    background: linear-gradient(180deg, rgba(239, 68, 68, 0.08) 0%, #0c0f17 100%);
+}
+
+.store-card.featured::before {
+    content: 'MOST POPULAR';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #ef4444;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+}
+
+.tier-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: #f3f5fb;
+    margin-bottom: 8px;
+}
+
+.tier-price {
+    font-size: 48px;
+    font-weight: 800;
+    color: #ef4444;
+    margin-bottom: 4px;
+}
+
+.tier-price span {
+    font-size: 18px;
+    font-weight: 500;
+    color: #94a3b8;
+}
+
+.tier-description {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+
+.benefits-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 24px 0;
+}
+
+.benefits-list li {
+    color: #f3f5fb;
+    font-size: 14px;
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.benefits-list li::before {
+    content: '✓';
+    color: #ef4444;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.donate-btn {
+    width: 100%;
+    padding: 14px 24px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+}
+
+.donate-btn:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+}
+
+.donate-btn.secondary {
+    background: transparent;
+    border: 2px solid #ef4444;
+    color: #ef4444;
+}
+
+.donate-btn.secondary:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.disclaimer {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 40px;
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.disclaimer strong {
+    color: #ef4444;
+}
+</style>
+</head>
+<body class="ml-page">
+<header class="ml-nav">
+  <a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
+  <nav class="ml-navlinks">
+    <a href="index.html">Home</a>
+    <a href="rules.html">Rules</a>
+    <a href="faq.html">FAQ</a>
+    <a href="store.html" class="active">Store</a>
+    <a href="application.html">Application</a>
+    <a class="btn small" href="login.html">Login</a>
+  </nav>
+</header>
+
+<main class="ml-container">
+<div class="staff-panel-container">
+    <div class="staff-panel-header">
+        <div>
+            <h1 class="staff-panel-title">Support MOON LIGHT</h1>
+            <p class="staff-panel-subtitle">Your donations help keep our server running and improve the community experience for everyone.</p>
+        </div>
+    </div>
+
+    <div class="store-grid">
+        <div class="store-card">
+            <h3 class="tier-name">Supporter</h3>
+            <div class="tier-price">$5<span>/month</span></div>
+            <p class="tier-description">Perfect for players who want to show their support and get a few small perks.</p>
+            <ul class="benefits-list">
+                <li>Supporter role in Discord</li>
+                <li>Priority in support queue</li>
+                <li>Custom Discord nickname color</li>
+                <li>Supporter badge on forum</li>
+            </ul>
+            <a href="#" class="donate-btn secondary">Donate $5</a>
+        </div>
+
+        <div class="store-card featured">
+            <h3 class="tier-name">Premium</h3>
+            <div class="tier-price">$15<span>/month</span></div>
+            <p class="tier-description">Our most popular tier for dedicated players who want more from their experience.</p>
+            <ul class="benefits-list">
+                <li>All Supporter benefits</li>
+                <li>Premium Discord role</li>
+                <li>Exclusive vehicle access</li>
+                <li>Priority server queue (when full)</li>
+                <li>Monthly bonus in-game currency</li>
+                <li>Access to premium channels</li>
+            </ul>
+            <a href="#" class="donate-btn">Donate $15</a>
+        </div>
+
+        <div class="store-card">
+            <h3 class="tier-name">VIP</h3>
+            <div class="tier-price">$30<span>/month</span></div>
+            <p class="tier-description">For our most dedicated community members who want the ultimate experience.</p>
+            <ul class="benefits-list">
+                <li>All Premium benefits</li>
+                <li>VIP Discord role with special perks</li>
+                <li>Exclusive VIP vehicle pack</li>
+                <li>Custom clothing items</li>
+                <li>Priority application review</li>
+                <li>Private VIP channel access</li>
+                <li>Monthly in-game property discount</li>
+            </ul>
+            <a href="#" class="donate-btn secondary">Donate $30</a>
+        </div>
+
+        <div class="store-card">
+            <h3 class="tier-name">Lifetime</h3>
+            <div class="tier-price">$100<span>/one-time</span></div>
+            <p class="tier-description">A one-time donation for permanent Premium status and exclusive recognition.</p>
+            <ul class="benefits-list">
+                <li>Permanent Premium status</li>
+                <li>Lifetime badge on Discord</li>
+                <li>Special lifetime role</li>
+                <li>Priority in all queues</li>
+                <li>Exclusive lifetime-only events</li>
+                <li>Name on our supporters page</li>
+            </ul>
+            <a href="#" class="donate-btn secondary">Donate $100</a>
+        </div>
+    </div>
+
+    <div class="disclaimer">
+        <strong>Important:</strong> Donations are voluntary and help support server costs. All donation tiers are subject to our Terms of Service and may be revoked for rule violations. Donations do not grant immunity from server rules. For questions about donations, please contact staff in Discord.
+    </div>
+</div>
+</main>
+
+<footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer>
+</body>
+</html>
