@@ -85,16 +85,17 @@
 (async function loadAnnouncements(){
   try{
     const content=await mlGetContent();
-    const announcements=content.siteAnnouncements||[];
+    let announcements=content.siteAnnouncements||[];
     const announcementList=document.getElementById("announcementList");
     
     if(!announcements.length){
-      announcementList.innerHTML=`<div class="announcement-card" style="text-align:center;color:#94a3b8">No announcements available yet. Please check back later.</div>`;
-      return;
+      announcements=[
+        {title:"Welcome to MOON LIGHT RolePlay!",body:"We are excited to welcome all new and returning citizens to our FiveM roleplay community. Check out our server rules and apply today!",date:new Date().toISOString()}
+      ];
     }
     
     announcementList.innerHTML=announcements.map(a=>`<div class="announcement-card">
-        <div class="announcement-date">${mlEsc(a.date||"No date")}</div>
+        <div class="announcement-date">${mlFmt(a.date)}</div>
         <h3 class="announcement-title">${mlEsc(a.title)}</h3>
         <p class="announcement-body">${mlEsc(a.body)}</p>
     </div>`).join("");
@@ -103,8 +104,6 @@
     document.getElementById("announcementList").innerHTML=`<div class="announcement-card" style="text-align:center;color:#ef4444">Error loading announcements. Please refresh the page.</div>`;
   }
 })();
-
-loadAnnouncements();
 </script>
 </body>
 </html>

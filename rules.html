@@ -123,12 +123,18 @@
 (async function loadRules(){
   try{
     const content=await mlGetContent();
-    const rules=content.rules||[];
+    let rules=content.rules||[];
     const ruleList=document.getElementById("ruleList");
     
     if(!rules.length){
-      ruleList.innerHTML=`<div class="rule-card" style="text-align:center;color:#94a3b8">No rules available yet. Please check back later.</div>`;
-      return;
+      rules=[
+        {title:"Respect & Fair Play",body:"Treat all community members and staff with respect. Toxicity, hate speech, racism, and harassment are strictly prohibited."},
+        {title:"Value Your Life (FearRP)",body:"Your character must realistically value their life. When outnumbered or held at gunpoint, you must comply."},
+        {title:"New Life Rule (NLR)",body:"If your character is incapacitated and respawns at the hospital, you forget all memory of the scenario leading to your death."},
+        {title:"No RDM / VDM",body:"Random Death Match (killing without valid RP initiation) and Vehicle Death Match (using vehicles as weapons) are strictly forbidden."},
+        {title:"No Metagaming & Powergaming",body:"Using outside information in-character or forcing unrealistic actions on other players without giving them a chance to react is not allowed."},
+        {title:"Stay In Character",body:"Remain in-character at all times. Use Discord or dedicated OOC channels for out-of-character inquiries."}
+      ];
     }
     
     ruleList.innerHTML=rules.map((r,i)=>`<div class="rule-card">
@@ -141,8 +147,6 @@
     document.getElementById("ruleList").innerHTML=`<div class="rule-card" style="text-align:center;color:#ef4444">Error loading rules. Please refresh the page.</div>`;
   }
 })();
-
-loadRules();
 </script>
 </body>
 </html>

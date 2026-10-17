@@ -66,11 +66,9 @@
       });
       hydrating = false;
 
-      // Reload once so pages that render immediately from localStorage see cloud data.
-      if (!sessionStorage.getItem("ml_cloud_hydrated")) {
-        sessionStorage.setItem("ml_cloud_hydrated", "1");
-        location.reload();
-      }
+      // Mark hydrated and notify listeners without forcing a disruptive page reload
+      sessionStorage.setItem("ml_cloud_hydrated", "1");
+      window.dispatchEvent(new CustomEvent("ml:hydrated", { detail: { count: items.length } }));
     } catch (_) { hydrating = false; }
   }
 

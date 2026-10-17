@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Application | MOON LIGHT</title><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/responsive.css"></head>
-<body><header class="nav"><a class="brand" href="index.html"><span class="brand-mark">☾</span> MOON LIGHT</a><nav><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="index.html#faq">FAQ</a><a class="btn small" href="login.html">Login</a></nav></header><main class="form-page">
+<body><header class="nav"><a class="brand" href="index.html"><span class="brand-mark">☾</span> MOON LIGHT</a><nav><a href="index.html">Home</a><a href="rules.html">Rules</a><a href="faq.html">FAQ</a><a class="btn small" href="login.html">Login</a></nav></header><main class="form-page">
 <div id="verificationLock" class="verification-lock" style="display:none">
   <div class="lock-content">
     <h2>Discord Verification Required</h2>
@@ -21,6 +21,20 @@
 
 <div id="applicationContent" style="display:none">
 <div class="form-hero"><span>MOON LIGHT APPLICATION</span><h1>Tell us about yourself.</h1><p>Take your time. Good applications help us build a better roleplay community.</p></div>
+
+<div id="whitelistNotice" class="verification-success" style="display:none;background:rgba(34,197,94,0.12);border:1px solid #22c55e;margin-bottom:20px;">
+  <div class="success-content">
+    <h2 style="color:#22c55e;margin-bottom:8px">✓ Active Whitelist Spot Detected</h2>
+    <p style="color:#f3f5fb;font-size:15px;line-height:1.6;margin:0 0 16px 0;">
+      Our records show that your Discord account already holds an active <strong>Whitelist Spot</strong> on MOON LIGHT RolePlay. You cannot submit another whitelist application — your access is active, approved, and ready for in-game play!
+    </p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <a class="btn small" href="player.html" style="background:#22c55e;color:#090c14;font-weight:700">Go to My Dashboard →</a>
+      <a class="btn ghost small" href="fivem://connect/92.205.184.235">Connect to FiveM Server</a>
+      <a class="btn ghost small" href="https://discord.gg/E4TyrppE6q" target="_blank">Discord Community</a>
+    </div>
+  </div>
+</div>
 
 <div id="roleWarning" class="verification-success" style="display:none">
   <div class="success-content">
@@ -166,6 +180,7 @@ const GUEST_ROLE_ID = "1535511253563346956";
 
 let selectedDepartment = "CIVILIAN"; // Default
 let userDiscordRoles = [];
+let userIsWhitelisted = false;
 
 async function checkDiscordVerification() {
   const identity = await mlGetIdentity();
@@ -174,8 +189,6 @@ async function checkDiscordVerification() {
   const lock = document.getElementById('verificationLock');
   const success = document.getElementById('verificationSuccess');
   const content = document.getElementById('applicationContent');
-  const roleWarning = document.getElementById('roleWarning');
-  const departmentSelector = document.getElementById('departmentSelector');
   
   if (!identity || !identity.discordId) {
     lock.style.display = 'block';
@@ -198,12 +211,18 @@ async function checkDiscordVerification() {
     discordInput.value = identity.discordId;
   }
   
-  // Try to get user's Discord roles from the identity or Discord API
+  // Try to get user's Discord roles & whitelist status from API
   try {
     const meResponse = await fetch('/auth/me');
     const meData = await meResponse.json();
-    if (meData.authenticated && meData.user && meData.user.roles) {
-      userDiscordRoles = meData.user.roles;
+    if (meData.authenticated && meData.user) {
+      userDiscordRoles = meData.user.roles || [];
+      userIsWhitelisted = Boolean(
+        meData.user.isWhitelisted || 
+        meData.user.hasDiscordWhitelistRole || 
+        userDiscordRoles.includes(CITIZEN_ROLE_ID) ||
+        (role && role !== 'Player' && role !== 'PLAYER')
+      );
     }
   } catch (e) {
     console.log('Could not fetch Discord roles, using default behavior');
@@ -216,23 +235,45 @@ async function checkDiscordVerification() {
 }
 
 async function checkRoleRestrictions() {
+  const whitelistNotice = document.getElementById('whitelistNotice');
   const roleWarning = document.getElementById('roleWarning');
   const roleWarningText = document.getElementById('roleWarningText');
   const departmentSelector = document.getElementById('departmentSelector');
   const civilianBtn = document.getElementById('civilianBtn');
   const policeBtn = document.getElementById('policeBtn');
   const emsBtn = document.getElementById('emsBtn');
+  const formElement = document.getElementById('applicationForm');
+  const stepsElement = document.querySelector('.steps');
   
-  const hasCitizenRole = userDiscordRoles.includes(CITIZEN_ROLE_ID);
-  const hasGuestRole = userDiscordRoles.includes(GUEST_ROLE_ID);
-  
-  if (hasCitizenRole) {
-    // Citizen: Can only apply to ONE department (either EMS or Police)
-    roleWarning.style.display = 'block';
-    roleWarningText.textContent = "Citizen Role: You can only submit one application total. Choose either EMS or Police, not both.";
-    departmentSelector.style.display = 'block';
+  const identity = await mlGetIdentity();
+
+  if (userIsWhitelisted) {
+    // User already has a whitelist spot on Discord
+    whitelistNotice.style.display = 'block';
+    roleWarning.style.display = 'none';
     
-    // Check existing applications
+    // Push in-app notification if not already received
+    try {
+      if (identity?.discordId) {
+        const notifs = await mlNotifsFor(identity.discordId);
+        if (!notifs.some(n => n.title.includes("Whitelist") || n.title.includes("Whitelisted"))) {
+          await mlAddNotification(
+            identity.discordId,
+            ML_NOTIF_TYPES.APPROVED,
+            "Already Whitelisted on Discord",
+            "Your Discord account already has an active Whitelist Spot on MOON LIGHT RolePlay. You cannot submit another whitelist application. Your details are accessible on your dashboard."
+          );
+        }
+      }
+    } catch (_) {}
+
+    // Disable civilian whitelist application completely
+    civilianBtn.disabled = true;
+    civilianBtn.style.opacity = '0.4';
+    civilianBtn.style.cursor = 'not-allowed';
+    civilianBtn.title = 'You already have an active Whitelist Spot';
+
+    // Check if they have active department applications
     try {
       const response = await fetch('/api/applications');
       const data = await response.json();
@@ -243,67 +284,80 @@ async function checkRoleRestrictions() {
         );
         
         if (existingApps.length > 0) {
-          // User already has an application
+          // Already have department application too
           departmentSelector.style.display = 'none';
-          const appType = existingApps[0].type;
-          selectedDepartment = appType;
-          
-          if (appType === 'CIVILIAN') {
-            civilianBtn.disabled = false;
-            policeBtn.disabled = true;
-            emsBtn.disabled = true;
-          } else if (appType === 'POLICE') {
-            civilianBtn.disabled = true;
-            policeBtn.disabled = false;
-            emsBtn.disabled = true;
-          } else if (appType === 'EMS') {
-            civilianBtn.disabled = true;
-            policeBtn.disabled = true;
-            emsBtn.disabled = false;
-          }
-          
-          roleWarningText.textContent = `Citizen Role: You already have an active ${appType} application. Cannot submit additional applications.`;
-        } else {
-          // No existing applications, let them choose
-          civilianBtn.disabled = true; // Citizen can't apply to civilian
-          policeBtn.disabled = false;
-          emsBtn.disabled = false;
-          selectedDepartment = 'POLICE'; // Default to Police
+          if (formElement) formElement.style.display = 'none';
+          if (stepsElement) stepsElement.style.display = 'none';
+          return;
         }
       }
-    } catch (error) {
-      console.error('Error checking existing applications:', error);
+    } catch (e) {
+      console.error('Error checking existing applications:', e);
+    }
+
+    // If user arrived specifically to apply for Police or EMS
+    const urlParamDept = (new URLSearchParams(window.location.search).get("dept")||"").toUpperCase();
+    if (urlParamDept === "EMS") {
+      selectedDepartment = "EMS";
+      departmentSelector.style.display = 'block';
+      if (formElement) formElement.style.display = 'block';
+      if (stepsElement) stepsElement.style.display = 'flex';
+    } else if (urlParamDept === "POLICE") {
+      selectedDepartment = "POLICE";
+      departmentSelector.style.display = 'block';
+      if (formElement) formElement.style.display = 'block';
+      if (stepsElement) stepsElement.style.display = 'flex';
+    } else {
+      // By default for Civilian on whitelist: hide form and guide them to dashboard
+      selectedDepartment = "CIVILIAN";
+      departmentSelector.style.display = 'block';
+      if (formElement) formElement.style.display = 'none';
+      if (stepsElement) stepsElement.style.display = 'none';
     }
     
-  } else if (hasGuestRole) {
-    // Guest: Normal applications, can reapply if rejected
+    updateDepartmentButtons();
+    return;
+  }
+
+  const hasGuestRole = userDiscordRoles.includes(GUEST_ROLE_ID);
+  
+  if (hasGuestRole) {
     roleWarning.style.display = 'block';
-    roleWarningText.textContent = "Guest Role: You can submit applications. If rejected, you may apply again.";
+    roleWarningText.textContent = "Guest Role: You can submit an application. If rejected, you may apply again.";
     departmentSelector.style.display = 'block';
     
-    // Enable all departments
     civilianBtn.disabled = false;
     policeBtn.disabled = false;
     emsBtn.disabled = false;
-    selectedDepartment = 'CIVILIAN'; // Default to Civilian
-    
+    const urlParamDept = (new URLSearchParams(window.location.search).get("dept")||"").toUpperCase();
+    const validDepts = ["CIVILIAN", "POLICE", "EMS"];
+    selectedDepartment = validDepts.includes(urlParamDept) ? urlParamDept : 'CIVILIAN';
   } else {
-    // Normal user: All departments available
     roleWarning.style.display = 'none';
     departmentSelector.style.display = 'block';
     
     civilianBtn.disabled = false;
     policeBtn.disabled = false;
     emsBtn.disabled = false;
-    selectedDepartment = 'CIVILIAN';
+    const urlParamDept = (new URLSearchParams(window.location.search).get("dept")||"").toUpperCase();
+    const validDepts = ["CIVILIAN", "POLICE", "EMS"];
+    selectedDepartment = validDepts.includes(urlParamDept) ? urlParamDept : 'CIVILIAN';
   }
   
-  // Update button styles
   updateDepartmentButtons();
 }
 
 function selectDepartment(dept) {
+  if (userIsWhitelisted && dept === "CIVILIAN") {
+    alert("✓ You are already whitelisted on MOON LIGHT! You cannot submit another civilian application. View your dashboard for your character details.");
+    window.location.href = "player.html";
+    return;
+  }
   selectedDepartment = dept;
+  const formElement = document.getElementById('applicationForm');
+  const stepsElement = document.querySelector('.steps');
+  if (formElement) formElement.style.display = 'block';
+  if (stepsElement) stepsElement.style.display = 'flex';
   updateDepartmentButtons();
 }
 
@@ -321,9 +375,11 @@ function updateDepartmentButtons() {
   const activeBtn = selectedDepartment === 'CIVILIAN' ? civilianBtn : 
                     selectedDepartment === 'POLICE' ? policeBtn : emsBtn;
   
-  activeBtn.style.background = '#dc2626';
-  activeBtn.style.borderColor = '#dc2626';
-  activeBtn.style.color = '#f3f5fb';
+  if (activeBtn) {
+    activeBtn.style.background = '#dc2626';
+    activeBtn.style.borderColor = '#dc2626';
+    activeBtn.style.color = '#f3f5fb';
+  }
 }
 
 checkDiscordVerification();
@@ -339,6 +395,12 @@ document.getElementById("applicationForm").addEventListener("submit", async func
     return;
   }
   
+  if (userIsWhitelisted && selectedDepartment === 'CIVILIAN') {
+    alert('✓ You already hold an active Whitelist Spot on Discord!\n\nYou cannot submit another whitelist application. Your character and whitelist access are already approved.');
+    window.location.href = 'player.html';
+    return;
+  }
+
   // Check role-based restrictions before submission
   const hasCitizenRole = userDiscordRoles.includes(CITIZEN_ROLE_ID);
   const hasGuestRole = userDiscordRoles.includes(GUEST_ROLE_ID);
@@ -355,7 +417,8 @@ document.getElementById("applicationForm").addEventListener("submit", async func
         );
         
         if (existingApps.length > 0) {
-          alert('❌ Citizen Role: You already have an active application. You can only have one application total.');
+          alert('❌ You already have an active or accepted application. You cannot submit an additional application.');
+          window.location.href = 'player.html';
           return;
         }
       }
@@ -406,6 +469,11 @@ document.getElementById("applicationForm").addEventListener("submit", async func
     const submitData = await submitResponse.json();
     
     if (!submitData.ok) {
+      if (submitData.whitelisted) {
+        alert(`✓ ${submitData.error}\n\nRedirecting to your dashboard to view your profile details.`);
+        window.location.href = 'player.html';
+        return;
+      }
       if (submitData.error === 'You already have an active application') {
         const statusText = submitData.existing.status.replace('_', ' ').toUpperCase();
         alert(`❌ You already have an active application.\n\nStatus: ${statusText}\nType: ${submitData.existing.type}\nSubmitted: ${new Date(submitData.existing.created_at).toLocaleString()}\n\nPlease wait for your current application to be processed before submitting a new one.`);

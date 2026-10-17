@@ -74,12 +74,18 @@
 <script src="assets/ml.js"></script>
 <script src="assets/portal.js"></script>
 <script>
+const menuBtn = document.getElementById("menuBtn");
+if (menuBtn) {
+  menuBtn.addEventListener("click", () => {
+    document.querySelector(".nav")?.classList.toggle("open");
+  });
+}
+
 /* Live FiveM server status - connects to real server */
 const FIVEM_SERVER_IP = "92.205.184.235";
 
 async function fetchRealServerStatus() {
   try {
-    // Try to fetch from our API first (which connects to real server)
     const response = await fetch('/api/server-status');
     if (response.ok) {
       const data = await response.json();
@@ -88,26 +94,10 @@ async function fetchRealServerStatus() {
       }
     }
   } catch (error) {
-    console.log('Could not fetch from API, trying direct connection:', error.message);
+    console.log('Could not fetch from API:', error.message);
   }
   
-  // Fallback: try direct connection to FiveM server
-  try {
-    const response = await fetch(`http://${FIVEM_SERVER_IP}/info.json`);
-    if (response.ok) {
-      const serverInfo = await response.json();
-      return {
-        online: true,
-        players: serverInfo.vars?.sv_maxclients || 0,
-        maxPlayers: serverInfo.vars?.sv_maxclients || 128,
-        hostname: serverInfo.vars?.sv_hostname || "MOON LIGHT RolePlay"
-      };
-    }
-  } catch (error) {
-    console.log('Could not fetch real server status, using fallback:', error.message);
-  }
-  
-  // Final fallback to settings if real server is unavailable
+  // Fallback to settings if server-status is temporarily unavailable
   try {
     const s = await mlGetServerStatus();
     return {
@@ -132,7 +122,9 @@ async function fetchRealServerStatus() {
   document.getElementById("statPlayers").textContent=serverStatus.players;
   document.getElementById("statCapacity").textContent=serverStatus.maxPlayers;
   document.getElementById("statusLabel").textContent=serverStatus.online?"SERVER ONLINE":"SERVER OFFLINE";
-  document.getElementById("statusDot").style.background=serverStatus.online?"#ef4444":"#dc2626";
+  const dot = document.getElementById("statusDot");
+  dot.style.background = serverStatus.online ? "#22c55e" : "#dc2626";
+  dot.style.boxShadow = serverStatus.online ? "0 0 10px #22c55e" : "0 0 10px #dc2626";
   
   // Update hero links with real server connection
   const fivemLink = document.querySelector('a[href="fivem://connect/92.205.184.235"]');

@@ -32,10 +32,19 @@
 <script src="assets/portal.js"></script>
 <script>
 const lock=document.getElementById("lock"), box=document.getElementById("box");
-if(mlRoleGate(lock,box,"Streamers","Streamer Manager")) render();
 
-function render(){
-  const s=mlGetStreamers();
+(async function initStreamers(){
+  try{
+    if(await mlRoleGate(lock,box,"Streamers","Streamer Manager")){
+      await render();
+    }
+  }catch(e){
+    console.error("Streamers init error:",e);
+  }
+})();
+
+async function render(){
+  const s=await mlGetStreamers();
   document.getElementById("list").innerHTML=s.length?s.map((x,i)=>`<article class="ml-card">
     <div class="app-meta"><span class="ml-pill">${mlEsc(x.platform)}</span><span class="ml-status ${x.live?"accepted":"pending"}">${x.live?"live":"offline"}</span></div>
     <h3 style="margin-top:8px">${mlEsc(x.name)}</h3>
@@ -44,20 +53,20 @@ function render(){
   </article>`).join(""):`<div class="ml-card" style="grid-column:1/-1">No streamers added yet.</div>`;
 }
 
-function addStreamer(){
+async function addStreamer(){
   const name=document.getElementById("sName").value.trim();
   const platform=document.getElementById("sPlatform").value;
   const url=document.getElementById("sUrl").value.trim();
   const live=document.getElementById("sLive").value==="true";
   if(!name||!url){alert("Name and channel URL are required.");return}
-  const s=mlGetStreamers();
+  const s=await mlGetStreamers();
   s.push({id:mlUid(),name,platform,url,live});
-  mlSaveStreamers(s);
-  mlLog("Streamers","Streamer added",name,`${platform} — ${url}`);
+  await mlSaveStreamers(s);
+  await mlLog("Streamers","Streamer added",name,`${platform} — ${url}`);
   document.getElementById("sName").value="";document.getElementById("sUrl").value="";
-  render();
+  await render();
 }
-function toggleLive(i){const s=mlGetStreamers();s[i].live=!s[i].live;mlSaveStreamers(s);mlLog("Streamers",`Streamer marked ${s[i].live?"live":"offline"}`,s[i].name,"");render()}
-function removeStreamer(i){const s=mlGetStreamers();const r=s.splice(i,1)[0];mlSaveStreamers(s);mlLog("Streamers","Streamer removed",r?.name||"","");render()}
+async function toggleLive(i){const s=await mlGetStreamers();s[i].live=!s[i].live;await mlSaveStreamers(s);await mlLog("Streamers",`Streamer marked ${s[i].live?"live":"offline"}`,s[i].name,"");await render()}
+async function removeStreamer(i){const s=await mlGetStreamers();const r=s.splice(i,1)[0];await mlSaveStreamers(s);await mlLog("Streamers","Streamer removed",r?.name||"","");await render()}
 </script>
 </body></html>

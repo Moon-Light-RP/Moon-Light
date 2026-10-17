@@ -124,6 +124,25 @@
         </div>
     </div>
 
+<div id="whitelistBadgeBanner" class="player-card" style="display:none;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.35);margin-bottom:24px;padding:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+        <div style="display:flex;align-items:center;gap:16px">
+            <div id="playerAvatarBox" style="width:54px;height:54px;border-radius:50%;overflow:hidden;background:#14532d;display:grid;place-items:center;color:#4ade80;font-size:24px;font-weight:700">✓</div>
+            <div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                    <h2 style="margin:0;font-size:20px;color:#f3f5fb" id="whitelistHeading">Whitelisted Citizen</h2>
+                    <span class="ml-pill" style="background:#14532d;color:#4ade80;border:1px solid #22c55e">✓ Whitelisted</span>
+                </div>
+                <p style="margin:4px 0 0;color:#94a3b8;font-size:14px">Your Discord account has an active Whitelist Spot on MOON LIGHT RolePlay.</p>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a class="ml-btn primary" href="fivem://connect/92.205.184.235">Connect to FiveM</a>
+            <a class="ml-btn" href="https://discord.gg/E4TyrppE6q" target="_blank">Discord Community</a>
+        </div>
+    </div>
+</div>
+
 <div id="noProfile" class="player-card" style="display:none">You haven't linked a Discord username yet, so we're showing your most recent local submission. <a href="profile.html" style="color:#ef4444;text-decoration:underline">Set up your profile</a> to always see the right applications.</div>
 
 <div class="profile-section">
@@ -152,6 +171,10 @@
 <div class="profile-section">
     <h3 class="section-title">Account Status</h3>
     <div class="player-stat">
+        <span class="player-stat-label">Whitelist Status</span>
+        <span class="player-stat-value" id="acctWhitelist">—</span>
+    </div>
+    <div class="player-stat">
         <span class="player-stat-label">Status</span>
         <span class="player-stat-value" id="acctStatus">—</span>
     </div>
@@ -179,88 +202,183 @@
 <script>
 function getProfile(){try{return JSON.parse(localStorage.getItem("moon_light_profile_v1")||"{}")}catch(e){return{}}}
 function deptLabel(t){return t==="CIVILIAN"?"Civilian":t==="POLICE"?"Police":t==="EMS"?"EMS":(t||"Unknown")}
-function applyLink(t){return t==="POLICE"?"police-application.html":t==="EMS"?"ems-application.html":"application.html"}
+function applyLink(t){return `application.html?dept=${encodeURIComponent(String(t||"civilian").toLowerCase())}`}
 
-const profile=getProfile();
-const allApps=mlGetApps();
-const myDiscord=(profile.discordUser||"").trim().toLowerCase();
-let myApps=[];
-if(myDiscord){
-  myApps=allApps.filter(a=>(a.discord||"").trim().toLowerCase()===myDiscord);
-}else if(allApps.length){
-  document.getElementById("noProfile").style.display="block";
-  myApps=[allApps[allApps.length-1]];
-}
+(async function initPlayerDashboard(){
+  try{
+    const profile=getProfile();
+    const allApps=await mlGetApps();
+    const identity=await mlGetIdentity();
 
-/* Profile card */
-document.getElementById("welcome").textContent=`Welcome back, ${profile.displayName||"Player"}.`;
-document.getElementById("pName").textContent=profile.displayName||"Unnamed Player";
-document.getElementById("pDiscord").textContent=profile.discordUser||"—";
-document.getElementById("pSteam").textContent=profile.steamProfile||"—";
-const identity=mlGetIdentity();
-document.getElementById("pLinked").textContent=identity?`Linked (${identity.username})`:"Not linked — sign in via Login to link it";
+    // Query server for live Discord session & whitelist state
+    let meUser = null;
+    try {
+      const meRes = await fetch('/auth/me');
+      const meData = await meRes.json();
+      if (meData.authenticated && meData.user) {
+        meUser = meData.user;
+      }
+    } catch (_) {}
 
-/* Account status card */
-if(myApps.length){
-  const earliest=myApps.map(a=>a.submitted).filter(Boolean).sort()[0];
-  document.getElementById("acctMember").textContent=earliest||"—";
-  const anyAccepted=myApps.some(a=>a.status==="accepted");
-  const anyPending=myApps.some(a=>a.status==="pending"||a.status==="interview");
-  document.getElementById("acctStatus").textContent=anyAccepted?"Active — at least one accepted application":anyPending?"Application(s) in progress":"No active applications";
-}else{
-  document.getElementById("acctStatus").textContent="No applications submitted yet.";
-}
-const accepted=myApps.filter(a=>a.status==="accepted").map(a=>deptLabel(a.type));
-document.getElementById("acctDepts").textContent=accepted.length?accepted.join(", "):"No accepted department yet.";
-
-/* Applications grid */
-const grid=document.getElementById("appsGrid");
-if(!myApps.length){
-  grid.innerHTML=`<div class="player-card" style="text-align:center">
-    <h3>No applications yet</h3>
-    <p class="ml-muted">Start your story at MOON LIGHT — apply to join, or apply directly to a department.</p>
-    <div style="margin-top:16px"><a class="ml-btn primary" href="application.html">Civilian Application</a><a class="ml-btn" href="police-application.html">Police Application</a><a class="ml-btn" href="ems-application.html">EMS Application</a></div>
-  </div>`;
-}else{
-  grid.innerHTML=myApps.map(a=>{
-    const dept=deptLabel(a.type);
-    let interviewHtml;
-    if(a.interview?.result){
-      const last=(a.interview.history||[]).slice(-1)[0];
-      interviewHtml=`<p><b>Interview:</b> ${a.interview.result==="passed"?"Passed ✓":"Failed ✕"}${last?` — ${mlFmt(last.date)}`:""}</p>`;
-    }else if(a.interview?.scheduled){
-      interviewHtml=`<p><b>Interview:</b> Scheduled — ${mlFmt(a.interview.scheduled.datetime)}<br><span class="ml-muted">Interviewer: ${mlEsc(a.interview.scheduled.interviewer)}</span></p>`;
-    }else if(a.status==="interview"){
-      interviewHtml=`<p><b>Interview:</b> Approved for interview — awaiting scheduling</p>`;
-    }else{
-      interviewHtml=`<p><b>Interview:</b> Not scheduled</p>`;
+    const myDiscord=(identity?.discordId || identity?.username || profile.discordUser || "").trim().toLowerCase();
+    let myApps=[];
+    if(myDiscord){
+      myApps=allApps.filter(a=>{
+        const dId=String(a.discord_id||"").trim().toLowerCase();
+        const dUser=String(a.discord_username||a.discord||"").trim().toLowerCase();
+        return dId===myDiscord || dUser===myDiscord;
+      });
+    }else if(allApps.length){
+      document.getElementById("noProfile").style.display="block";
+      myApps=[allApps[allApps.length-1]];
     }
-    return `<div class="player-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <span class="ml-pill">${mlEsc(dept)}</span>
-        <span class="ml-status ${a.status||"pending"}">${mlEsc(a.status||"pending")}</span>
-      </div>
-      <h3 style="margin-top:8px">${mlEsc(dept)} Application</h3>
-      <p class="ml-muted">Submitted ${mlEsc(a.submitted||"—")}</p>
-      ${interviewHtml}
-      <div style="margin-top:12px"><a class="ml-btn primary" href="${applyLink(a.type)}">View / Update</a></div>
-    </div>`;
-  }).join("");
-}
 
-/* Notifications */
-const notifBox=document.getElementById("notifications");
-const myNotifs=myDiscord?mlNotifsFor(myDiscord):(allApps.length?mlNotifsFor(allApps[allApps.length-1].discord):mlGetNotifs().filter(n=>n.toDiscord===null));
-if(!myNotifs.length){
-  notifBox.innerHTML=`<div class="player-card" style="text-align:center;color:#94a3b8">No new notifications.</div>`;
-}else{
-  notifBox.innerHTML=myNotifs.slice(0,20).map(n=>`<div class="notification-item">
-    <span class="notification-type">${mlEsc(n.type)}</span>
-    <div class="notification-title">${mlEsc(n.title)}</div>
-    <div class="notification-body">${mlEsc(n.body)}</div>
-    <div class="notification-date">${mlFmt(n.date)}</div>
-  </div>`).join("");
-}
+    const userRoles = meUser?.roles || [];
+    const staffRole = await mlRole();
+    const isWhitelisted = Boolean(
+      meUser?.isWhitelisted ||
+      meUser?.hasDiscordWhitelistRole ||
+      userRoles.includes("1535386905749757962") ||
+      myApps.some(a => a.status === "accepted") ||
+      (staffRole && staffRole !== "Player" && staffRole !== "PLAYER")
+    );
+
+    /* Profile card */
+    const displayName = meUser?.global_name || meUser?.username || identity?.username || profile.displayName || "Player";
+    document.getElementById("welcome").textContent=`Welcome back, ${displayName}.`;
+    document.getElementById("pName").textContent=displayName;
+    document.getElementById("pDiscord").textContent=identity?.username ? `${identity.username}${identity.discordId ? ` (${identity.discordId})` : ''}` : (profile.discordUser||"—");
+    document.getElementById("pSteam").textContent=profile.steamProfile || meUser?.acceptedApplication?.steam_url || "—";
+    document.getElementById("pLinked").textContent=identity?`Linked to Discord (${identity.username})`:"Not linked — sign in via Login to link it";
+
+    /* Whitelist Banner */
+    const banner = document.getElementById("whitelistBadgeBanner");
+    if (isWhitelisted && banner) {
+      banner.style.display = "block";
+      const avatarBox = document.getElementById("playerAvatarBox");
+      if (meUser?.avatar && meUser?.id && avatarBox) {
+        avatarBox.innerHTML = `<img src="https://cdn.discordapp.com/avatars/${meUser.id}/${meUser.avatar}.png?size=128" alt="${mlEsc(meUser.username)}" style="width:100%;height:100%;object-fit:cover">`;
+      }
+      document.getElementById("whitelistHeading").textContent = `${displayName} — Whitelisted Citizen`;
+    }
+
+    /* Account status card */
+    const acctWhitelistEl = document.getElementById("acctWhitelist");
+    if (acctWhitelistEl) {
+      acctWhitelistEl.innerHTML = isWhitelisted
+        ? '<span class="ml-status accepted" style="background:rgba(34,197,94,0.18);color:#22c55e;border:1px solid #22c55e;padding:3px 8px;border-radius:6px">✓ Approved Whitelist Spot</span>'
+        : '<span class="ml-muted">Not Whitelisted</span>';
+    }
+
+    if(myApps.length){
+      const earliest=myApps.map(a=>a.created_at||a.submitted).filter(Boolean).sort()[0];
+      document.getElementById("acctMember").textContent=earliest?mlFmt(earliest):"—";
+      const anyAccepted=myApps.some(a=>a.status==="accepted");
+      const anyPending=myApps.some(a=>a.status==="pending"||a.status==="interview"||a.status==="under_review");
+      document.getElementById("acctStatus").textContent=isWhitelisted?"Whitelisted Citizen (Active Spot)":anyAccepted?"Active — accepted into department":anyPending?"Application(s) in review":"No active applications";
+    }else{
+      document.getElementById("acctMember").textContent=identity?.linkedAt ? mlFmt(identity.linkedAt) : "Active Member";
+      document.getElementById("acctStatus").textContent=isWhitelisted?"Whitelisted Citizen (Active Spot)":"No applications submitted yet.";
+    }
+
+    const accepted=myApps.filter(a=>a.status==="accepted").map(a=>deptLabel(a.type));
+    if (isWhitelisted && !accepted.includes("Civilian")) accepted.unshift("Civilian");
+    document.getElementById("acctDepts").textContent=accepted.length?accepted.join(", "):"No accepted department yet.";
+
+    /* Applications grid */
+    const grid=document.getElementById("appsGrid");
+    const whitelistSpotHtml = `
+      <div class="player-card" style="border:1px solid rgba(34,197,94,0.35);background:rgba(34,197,94,0.04);margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span class="ml-pill" style="background:#14532d;color:#4ade80">Whitelist Spot</span>
+          <span class="ml-status accepted">Approved</span>
+        </div>
+        <h3 style="margin-top:4px;color:#f3f5fb">Civilian Whitelist Access</h3>
+        <p class="ml-muted">Verified Discord Whitelist Role · No application needed</p>
+        <p style="margin-top:8px;font-size:13px;color:#cbd5e1">Your account holds an approved Whitelist Spot. You can connect to the FiveM server directly.</p>
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+          <a class="ml-btn primary" href="fivem://connect/92.205.184.235">Connect to FiveM Server</a>
+          <a class="ml-btn" href="application.html?dept=police">Apply for Police</a>
+          <a class="ml-btn" href="application.html?dept=ems">Apply for EMS</a>
+        </div>
+      </div>
+    `;
+
+    if(!myApps.length){
+      grid.innerHTML=isWhitelisted ? whitelistSpotHtml : `<div class="player-card" style="text-align:center">
+        <h3>No applications yet</h3>
+        <p class="ml-muted">Start your story at MOON LIGHT — apply to join, or apply directly to a department.</p>
+        <div style="margin-top:16px"><a class="ml-btn primary" href="application.html?dept=civilian">Civilian Application</a><a class="ml-btn" href="application.html?dept=police">Police Application</a><a class="ml-btn" href="application.html?dept=ems">EMS Application</a></div>
+      </div>`;
+    }else{
+      const cardsHtml = myApps.map(a=>{
+        const dept=deptLabel(a.type);
+        const appDate=a.created_at?mlFmt(a.created_at):(a.submitted||"—");
+        let interviewHtml;
+        if(a.interview_result || a.interview?.result){
+          const res = a.interview_result || a.interview?.result;
+          interviewHtml=`<p><b>Interview:</b> ${res==="passed"?"Passed ✓":"Failed ✕"}</p>`;
+        }else if(a.interview_scheduled_at || a.interview?.scheduled){
+          const dt = a.interview_scheduled_at || a.interview?.scheduled?.datetime;
+          interviewHtml=`<p><b>Interview:</b> Scheduled — ${mlFmt(dt)}</p>`;
+        }else if(a.status==="interview"){
+          interviewHtml=`<p><b>Interview:</b> Approved for interview — awaiting scheduling</p>`;
+        }else{
+          interviewHtml=`<p><b>Interview:</b> Not scheduled</p>`;
+        }
+        return `<div class="player-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span class="ml-pill">${mlEsc(dept)}</span>
+            <span class="ml-status ${a.status||"pending"}">${mlEsc(a.status||"pending")}</span>
+          </div>
+          <h3 style="margin-top:8px">${mlEsc(dept)} Application</h3>
+          <p class="ml-muted">Submitted ${mlEsc(appDate)}</p>
+          ${interviewHtml}
+          <div style="margin-top:12px"><a class="ml-btn primary" href="${applyLink(a.type)}">View / Update</a></div>
+        </div>`;
+      }).join("");
+
+      grid.innerHTML = (isWhitelisted && !myApps.some(a => a.type === 'CIVILIAN') ? whitelistSpotHtml : '') + cardsHtml;
+    }
+
+    /* Notifications */
+    const notifBox=document.getElementById("notifications");
+    let myNotifs=[];
+    try{
+      if(myDiscord){
+        myNotifs=await mlNotifsFor(myDiscord);
+      }
+      if(!myNotifs.length){
+        const allNotifs=await mlGetNotifs();
+        myNotifs=allNotifs.filter(n=>n.toDiscord===null);
+      }
+    }catch(err){
+      console.warn("Notifications error:",err);
+    }
+
+    if (isWhitelisted && !myNotifs.some(n => n.title && (n.title.includes("Whitelist") || n.title.includes("Whitelisted")))) {
+      myNotifs.unshift({
+        type: "Whitelist Approved",
+        title: "Active Whitelist Spot",
+        body: "Your Discord account holds an approved Whitelist Spot on MOON LIGHT RolePlay. You are authorized to connect and play!",
+        date: new Date().toISOString()
+      });
+    }
+
+    if(!myNotifs.length){
+      notifBox.innerHTML=`<div class="player-card" style="text-align:center;color:#94a3b8">No new notifications.</div>`;
+    }else{
+      notifBox.innerHTML=myNotifs.slice(0,20).map(n=>`<div class="notification-item">
+        <span class="notification-type">${mlEsc(n.type)}</span>
+        <div class="notification-title">${mlEsc(n.title)}</div>
+        <div class="notification-body">${mlEsc(n.body)}</div>
+        <div class="notification-date">${mlFmt(n.date)}</div>
+      </div>`).join("");
+    }
+  }catch(e){
+    console.error("Error in player dashboard:",e);
+  }
+})();
 </script>
 </body>
 </html>

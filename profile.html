@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Profile & Settings | MOON LIGHT</title><link rel="stylesheet" href="assets/ml-complete.css"><link rel="stylesheet" href="assets/responsive.css"></head><body class="ml-page"><header class="ml-nav"><a class="ml-brand" href="index.html"><span class="ml-moon">☾</span> MOON LIGHT</a>
     <nav class="ml-navlinks">
-    <a href="index.html">Home</a><a href="rules.html">Rules</a><a href="store.html">Store</a><a href="application.html">Application</a href="player.html" class="">My Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a>
+    <a href="index.html">Home</a><a href="rules.html">Rules</a><a href="store.html">Store</a><a href="application.html">Application</a><a href="player.html">My Dashboard</a><a href="police.html">Police</a><a href="ems.html">EMS</a><a href="login.html">Login</a>
     </nav></header><main class="ml-container">
 <div class="ml-hero"><span class="ml-eyebrow">ACCOUNT</span><h1>Profile & Settings</h1><p>Manage the information shown to your MOON LIGHT account.</p></div>
 <div class="ml-card">
@@ -17,9 +17,39 @@
 </form>
 </main><footer class="ml-footer">© 2026 MOON LIGHT RolePlay. All rights reserved.</footer><script src="assets/portal.js"></script>
 <script>
-const K="moon_light_profile_v1";let p=JSON.parse(localStorage.getItem(K)||"{}");["displayName","discordUser","steamProfile","notify"].forEach(k=>{if(p[k])document.getElementById(k).value=p[k]});function saveProfile(e){e.preventDefault();let p={};["displayName","discordUser","steamProfile","notify"].forEach(k=>p[k]=document.getElementById(k).value);localStorage.setItem(K,JSON.stringify(p));document.getElementById("saved").style.display="block"}
-const identity=mlGetIdentity();
-document.getElementById("linkStatus").textContent=identity?`Linked to Discord as ${identity.username}${identity.discordId?` (ID: ${identity.discordId})`:""}. Detected role: ${mlRole()||"Player"}.`:"No Discord account linked yet.";
+const K="moon_light_profile_v1";
+let p={};
+try{p=JSON.parse(localStorage.getItem(K)||"{}")}catch(e){}
+["displayName","discordUser","steamProfile","notify"].forEach(k=>{if(p[k])document.getElementById(k).value=p[k]});
+
+function saveProfile(e){
+  e.preventDefault();
+  let data={};
+  ["displayName","discordUser","steamProfile","notify"].forEach(k=>data[k]=document.getElementById(k).value);
+  localStorage.setItem(K,JSON.stringify(data));
+  document.getElementById("saved").style.display="block";
+}
+
+(async function initProfile(){
+  try{
+    const identity=await mlGetIdentity();
+    const role=await mlRole();
+    const roleName=await mlGetRoleName();
+    if(identity && identity.username){
+      document.getElementById("linkStatus").textContent=`Linked to Discord as ${identity.username}${identity.discordId?` (ID: ${identity.discordId})`:""}. Role: ${roleName || role || "Player"}.`;
+      if(!document.getElementById("displayName").value){
+        document.getElementById("displayName").value=identity.username;
+      }
+      if(!document.getElementById("discordUser").value){
+        document.getElementById("discordUser").value=identity.username;
+      }
+    }else{
+      document.getElementById("linkStatus").textContent="No Discord account linked yet. Please sign in via the Login page.";
+    }
+  }catch(err){
+    console.error("Profile load error:",err);
+  }
+})();
 </script>
 <script src="assets/ml.js"></script>
 </body>

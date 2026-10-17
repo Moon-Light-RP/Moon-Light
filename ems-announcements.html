@@ -84,7 +84,7 @@ let tab="announcements";
     if(await mlRoleGate(lock,box,"EMS","EMS Cmd")){
       lock.className="role-message granted";
       lock.innerHTML="EMS Announcements access granted.";
-      render();
+      await render();
     }
   }catch(e){
     console.error("Error initializing EMS announcements:",e);
@@ -105,30 +105,30 @@ setTimeout(() => {
 
 function setTab(t){tab=t;document.getElementById("formTitle").textContent=t==="announcements"?"New Announcement":"New Internal Notice";render()}
 
-function post(){
+async function post(){
   const title=document.getElementById("nTitle").value.trim();
   const author=document.getElementById("nAuthor").value.trim()||"Staff";
   const body=document.getElementById("nBody").value.trim();
   if(!title||!body){alert("Title and message are required.");return}
-  const data=mlGetNotices(DEPT);
+  const data=await mlGetNotices(DEPT);
   data[tab]=data[tab]||[];
   data[tab].unshift({id:mlUid(),title,author,body,date:new Date().toISOString()});
-  mlSaveNotices(DEPT,data);
-  mlLog("EMS",tab==="announcements"?"Department announcement posted":"Internal notice posted",title,"");
-  if(tab==="announcements")mlAddNotification(null,ML_NOTIF_TYPES.STAFF_ANNOUNCEMENT,`EMS: ${title}`,body);
+  await mlSaveNotices(DEPT,data);
+  await mlLog("EMS",tab==="announcements"?"Department announcement posted":"Internal notice posted",title,"");
+  if(tab==="announcements")await mlAddNotification(null,ML_NOTIF_TYPES.STAFF_ANNOUNCEMENT,`EMS: ${title}`,body);
   document.getElementById("nTitle").value="";document.getElementById("nBody").value="";
-  render();
+  await render();
 }
 
-function remove(id){
-  const data=mlGetNotices(DEPT);
+async function remove(id){
+  const data=await mlGetNotices(DEPT);
   data[tab]=(data[tab]||[]).filter(n=>n.id!==id);
-  mlSaveNotices(DEPT,data);
-  render();
+  await mlSaveNotices(DEPT,data);
+  await render();
 }
 
-function render(){
-  const data=mlGetNotices(DEPT);
+async function render(){
+  const data=await mlGetNotices(DEPT);
   const items=data[tab]||[];
   const list=document.getElementById("list");
   list.innerHTML=items.length?items.map(n=>`<article class="ml-card">

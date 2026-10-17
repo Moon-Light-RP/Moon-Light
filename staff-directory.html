@@ -107,10 +107,19 @@ async function saveStaffRole(discordId,username,roleId){
   return await response.json();
 }
 
+const roleMapping={
+  'Management':'MANAGEMENT_ROLE_ID',
+  'Staff':'MODERATOR_ROLE_ID',
+  'Police Cmd':'POLICE_MANAGEMENT_ROLE_ID',
+  'EMS Cmd':'EMS_MANAGEMENT_ROLE_ID',
+  'Streamer Manager':'ADMINISTRATOR_ROLE_ID'
+};
+const friendlyRoleName = Object.fromEntries(Object.entries(roleMapping).map(([k,v])=>[v,k]));
+
 async function render(){
   const staffRoles=await getStaffRoles();
   document.getElementById("body").innerHTML=`<tr><th>Name</th><th>Discord ID</th><th>Role</th><th></th></tr>`+
-    (staffRoles.length?staffRoles.map(r=>`<tr><td>${mlEsc(r.discord_username)}</td><td>${mlEsc(r.discord_id)}</td><td><span class="ml-pill">${mlEsc(r.role_id)}</span></td><td><button class="ml-btn danger" onclick="removeStaffRole('${r.discord_id.replace(/'/g,"\\'")}')">Remove</button></td></tr>`).join(""):`<tr><td colspan="4">No staff roles yet.</td></tr>`);
+    (staffRoles.length?staffRoles.map(r=>`<tr><td>${mlEsc(r.discord_username)}</td><td>${mlEsc(r.discord_id)}</td><td><span class="ml-pill">${mlEsc(friendlyRoleName[r.role_id]||r.role_id)}</span></td><td><button class="ml-btn danger" onclick="removeStaffRole('${r.discord_id.replace(/'/g,"\\'")}')">Remove</button></td></tr>`).join(""):`<tr><td colspan="4">No staff roles yet.</td></tr>`);
 }
 
 async function addMap(){
@@ -118,15 +127,6 @@ async function addMap(){
   const id=document.getElementById("sId").value.trim();
   const role=document.getElementById("roleSel").value;
   if(!name||!id){alert("Enter both Name and Discord ID.");return}
-  
-  // Map role name to role ID
-  const roleMapping={
-    'Management':'MANAGEMENT_ROLE_ID',
-    'Staff':'MODERATOR_ROLE_ID',
-    'Police Cmd':'POLICE_MANAGEMENT_ROLE_ID',
-    'EMS Cmd':'EMS_MANAGEMENT_ROLE_ID',
-    'Streamer Manager':'ADMINISTRATOR_ROLE_ID'
-  };
   const roleId=roleMapping[role];
   if(!roleId){alert("Invalid role selected.");return}
   

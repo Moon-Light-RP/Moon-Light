@@ -180,7 +180,7 @@ async function initStaffPanel(){
     console.log("Got role name:", roleName);
     
     // SECURITY: Verify Management role with server
-    if(roleLabel==="MANAGEMENT_ROLE_ID"){
+    if(roleLabel==="Management" || roleLabel==="MANAGEMENT_ROLE_ID"){
       try{
         const response=await fetch("/api/auth/role");
         if(response.ok){

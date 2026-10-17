@@ -62,7 +62,11 @@
     </div>
 <div id="lock" class="role-message loading">Checking permission...</div>
 <div id="box" style="display:none;margin-top:16px">
-<div class="ml-actions"><button class="ml-btn" onclick="setTab('awaiting')">Awaiting Schedule</button><button class="ml-btn" onclick="setTab('scheduled')">Scheduled</button><a class="ml-btn" href="interview-history.html">Interview History →</a></div>
+<div class="ml-actions">
+  <button class="ml-btn" id="tabAwaiting" onclick="setTab('awaiting')">Awaiting Schedule</button>
+  <button class="ml-btn" id="tabScheduled" onclick="setTab('scheduled')">Scheduled</button>
+  <button class="ml-btn" id="tabHistory" onclick="setTab('history')">Interview History</button>
+</div>
 <div id="list" class="ml-grid" style="margin-top:14px"></div>
 </div>
 </div>
@@ -96,52 +100,109 @@ async function checkAccess(){
     return false;
   }
 }
-function setTab(t){tab=t;render()}
+function setTab(t){
+  tab=t;
+  document.getElementById("tabAwaiting").className=t==='awaiting'?'ml-btn primary':'ml-btn';
+  document.getElementById("tabScheduled").className=t==='scheduled'?'ml-btn primary':'ml-btn';
+  document.getElementById("tabHistory").className=t==='history'?'ml-btn primary':'ml-btn';
+  render();
+}
 
 async function render(){
   if(!(await checkAccess()))return;
   const depts=await allowedDepts();
   const all=await mlGetApps();
-  const rows=all.map((a,i)=>({a,i})).filter(x=>x.a.status==="interview"&&depts.includes(x.a.type));
-  const filtered=rows.filter(x=> tab==="awaiting" ? !x.a.interview?.scheduled : !!x.a.interview?.scheduled && !x.a.interview?.result);
+  let rows=[];
+  if(tab==="history"){
+    rows=all.filter(a=>depts.includes(a.type)&&(a.status==="accepted"||a.status==="rejected"));
+  }else if(tab==="scheduled"){
+    rows=all.filter(a=>a.status==="interview"&&depts.includes(a.type)&&(a.interview_scheduled_at||a.interview?.scheduled));
+  }else{
+    rows=all.filter(a=>a.status==="interview"&&depts.includes(a.type)&&!(a.interview_scheduled_at||a.interview?.scheduled));
+  }
   const list=document.getElementById("list");
-  if(!filtered.length){list.innerHTML=`<div class="ml-card" style="grid-column:1/-1">No applications in this view.</div>`;return}
-  list.innerHTML=filtered.map(({a,i})=>{
-    const sched=a.interview?.scheduled;
+  if(!rows.length){list.innerHTML=`<div class="ml-card" style="grid-column:1/-1">No applications in this view.</div>`;return}
+  list.innerHTML=rows.map(a=>{
+    const charName = a.character_name || a.characterName || "Unknown";
+    const discordName = a.discord_username || a.discord || "No Discord";
+    const appDate = a.created_at ? mlFmt(a.created_at) : (a.submitted || "—");
+    const sched = a.interview?.scheduled;
+    const schedTime = a.interview_scheduled_at || sched?.datetime;
+    const interviewer = sched?.interviewer || "Assigned Staff";
     return `<article class="application-card">
-      <h3>${mlEsc(a.characterName)} <span class="ml-pill">${a.type==="CIVILIAN"?"Civilian":mlEsc(a.type)}</span></h3>
-      <p class="ml-muted">${mlEsc(a.discord)} · ${mlEsc(a.experience||"—")}</p>
-      <div class="app-meta"><span>Submitted: ${mlEsc(a.submitted||"—")}</span></div>
-      ${sched?`<div class="ml-alert">Scheduled with <b>${mlEsc(sched.interviewer)}</b> at <b>${mlFmt(sched.datetime)}</b>${sched.notes?`<br>${mlEsc(sched.notes)}`:""}</div>
-      <div class="ml-actions"><a class="ml-btn primary" href="interview.html?idx=${i}">Start Interview →</a><button class="ml-btn" onclick="toggleForm(${i})">Reschedule</button></div>`
-      :`<div class="ml-actions"><button class="ml-btn primary" onclick="toggleForm(${i})">Schedule Interview</button></div>`}
-      <div id="form-${i}" style="display:none;margin-top:10px">
-        <label>Interviewer<input id="int-${i}" placeholder="Staff name" value="${mlEsc(sched?.interviewer||"")}"></label>
-        <label>Date & time<input id="dt-${i}" type="datetime-local" value="${sched?.datetime?sched.datetime.slice(0,16):""}"></label>
-        <label>Notes<textarea id="note-${i}" placeholder="Optional scheduling notes...">${mlEsc(sched?.notes||"")}</textarea></label>
-        <button class="ml-btn primary" onclick="schedule(${i})">Save Schedule</button>
+      <h3>${mlEsc(charName)} <span class="ml-pill">${a.type==="CIVILIAN"?"Civilian":mlEsc(a.type)}</span></h3>
+      <p class="ml-muted">${mlEsc(discordName)} · ${mlEsc(a.experience||"—")}</p>
+      <div class="app-meta"><span>Submitted: ${mlEsc(appDate)}</span><span class="ml-status ${a.status}">${mlEsc(a.status)}</span></div>
+      ${schedTime?`<div class="ml-alert">Scheduled with <b>${mlEsc(interviewer)}</b> at <b>${mlFmt(schedTime)}</b></div>`:""}
+      
+      ${tab==="history"?`<div class="ml-muted" style="margin-top:10px">Status: <b>${mlEsc(a.status)}</b></div>`:""}
+
+      ${tab==="scheduled"?`
+      <div class="ml-actions" style="margin-top:12px">
+        <button class="ml-btn primary" onclick="completeInterview('${a.id}','accepted')">Pass Interview ✓</button>
+        <button class="ml-btn danger" onclick="completeInterview('${a.id}','rejected')">Fail Interview ✕</button>
+        <button class="ml-btn" onclick="toggleForm('${a.id}')">Reschedule</button>
+      </div>`:""}
+
+      ${tab==="awaiting"?`
+      <div class="ml-actions" style="margin-top:12px">
+        <button class="ml-btn primary" onclick="toggleForm('${a.id}')">Schedule Interview</button>
+      </div>`:""}
+
+      <div id="form-${a.id}" style="display:none;margin-top:10px;padding:12px;border:1px solid #1e293b;border-radius:8px">
+        <label>Interviewer<input id="int-${a.id}" placeholder="Staff name" value="${mlEsc(sched?.interviewer||"")}"></label>
+        <label>Date & time<input id="dt-${a.id}" type="datetime-local" value="${schedTime?schedTime.slice(0,16):""}"></label>
+        <label>Notes<textarea id="note-${a.id}" placeholder="Optional scheduling notes...">${mlEsc(sched?.notes||"")}</textarea></label>
+        <button class="ml-btn primary" style="margin-top:8px" onclick="schedule('${a.id}')">Save Schedule</button>
       </div>
     </article>`;
   }).join("");
 }
 
-function toggleForm(i){const f=document.getElementById("form-"+i);f.style.display=f.style.display==="none"?"block":"none"}
+function toggleForm(id){const f=document.getElementById("form-"+id);f.style.display=f.style.display==="none"?"block":"none"}
 
-async function schedule(i){
-  const interviewer=document.getElementById("int-"+i).value.trim();
-  const datetime=document.getElementById("dt-"+i).value;
-  const notes=document.getElementById("note-"+i).value.trim();
+async function schedule(id){
+  const interviewer=document.getElementById("int-"+id).value.trim();
+  const datetime=document.getElementById("dt-"+id).value;
+  const notes=document.getElementById("note-"+id).value.trim();
   if(!interviewer||!datetime){alert("Interviewer and date/time are required.");return}
   const all=await mlGetApps();
-  const a=all[i];
+  const a=all.find(x=>String(x.id)===String(id));
+  if(!a)return;
   a.interview=a.interview||{history:[]};
   a.interview.scheduled={interviewer,datetime,notes};
-  a.interview.result=null;
-  await mlSaveApps(all);
+  a.interview_scheduled_at=datetime;
   const dept=a.type==="CIVILIAN"?"Civilian":a.type;
-  await mlAddNotification(a.discord,ML_NOTIF_TYPES.INTERVIEW_SCHEDULED,`${dept} interview scheduled`,`Your ${dept} interview is scheduled for ${mlFmt(datetime)} with ${interviewer}.`);
-  await mlLog(a.type==="CIVILIAN"?"Applications":a.type,"Interview scheduled",a.characterName||"Unknown",`${mlFmt(datetime)} with ${interviewer}`);
+  const discordTarget=a.discord_id||a.discord_username||a.discord;
+  const charName=a.character_name||a.characterName||"Unknown";
+  await mlAddNotification(discordTarget,ML_NOTIF_TYPES.INTERVIEW_SCHEDULED,`${dept} interview scheduled`,`Your ${dept} interview is scheduled for ${mlFmt(datetime)} with ${interviewer}.`);
+  await mlLog(a.type==="CIVILIAN"?"Applications":a.type,"Interview scheduled",charName,`${mlFmt(datetime)} with ${interviewer}`);
+  alert("Interview scheduled successfully!");
   await render();
+}
+
+async function completeInterview(id,result){
+  const notes=prompt(`Enter notes for marking this interview as ${result.toUpperCase()}:`) || "";
+  const all=await mlGetApps();
+  const a=all.find(x=>String(x.id)===String(id));
+  if(!a)return;
+  const dept=a.type==="CIVILIAN"?"Civilian":a.type;
+  const discordTarget=a.discord_id||a.discord_username||a.discord;
+  const charName=a.character_name||a.characterName||"Unknown";
+  
+  const res=await mlUpdateAppStatus(a.id,result);
+  if(res && res.ok!==false){
+    if(result==="accepted"){
+      await mlAddNotification(discordTarget,ML_NOTIF_TYPES.APPROVED,`${dept} Application Passed`,`Congratulations! You passed your interview and have been accepted into ${dept}.`);
+    }else{
+      await mlAddNotification(discordTarget,ML_NOTIF_TYPES.REJECTED,`${dept} Interview Result`,`Your interview was not successful this time. Notes: ${notes}`);
+    }
+    await mlLog(a.type==="CIVILIAN"?"Applications":a.type,`Interview result: ${result}`,charName,notes);
+    alert(`Interview marked as ${result}.`);
+    await render();
+  }else{
+    alert("Error updating status: "+(res?.error||"Unknown error"));
+  }
 }
 
 (async function initInterviewQueue(){

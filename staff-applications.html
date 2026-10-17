@@ -340,20 +340,14 @@ async function allowedDepts(){
       console.log('Could not check Applications permission:', e);
     }
     try{
-      if(await mlHasPerm("police.view"))d.push("POLICE");
+      if(await mlHasPerm("Police"))d.push("POLICE");
     }catch(e){
-      console.log('Could not check police.view permission:', e);
+      console.log('Could not check Police permission:', e);
     }
     try{
-      if(await mlHasPerm("ems.view"))d.push("EMS");
+      if(await mlHasPerm("EMS"))d.push("EMS");
     }catch(e){
-      console.log('Could not check ems.view permission:', e);
-    }
-    
-    // Fallback: if logged in but no permissions, show at least civilian
-    if(d.length===0){
-      console.log('No permissions found, adding CIVILIAN as fallback');
-      d.push("CIVILIAN");
+      console.log('Could not check EMS permission:', e);
     }
     
     console.log('Allowed departments:', d);

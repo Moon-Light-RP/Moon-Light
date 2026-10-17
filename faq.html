@@ -103,12 +103,17 @@
 (async function loadFAQ(){
   try{
     const content=await mlGetContent();
-    const faq=content.faq||[];
+    let faq=content.faq||[];
     const faqList=document.getElementById("faqList");
     
     if(!faq.length){
-      faqList.innerHTML=`<div class="faq-card" style="text-align:center;padding:20px;color:#94a3b8">No FAQ items available yet. Please check back later.</div>`;
-      return;
+      faq=[
+        {q:"How do I join the MOON LIGHT server?",a:"Join our official Discord community, read through our server rules, and submit an application on this website."},
+        {q:"What are the age requirements?",a:"Players must be at least 16 years old with a mature roleplay mindset."},
+        {q:"Is a working microphone required?",a:"Yes, a clear working microphone is required at all times for voice communication in-game."},
+        {q:"How do I apply for Police or EMS?",a:"Navigate to the Application page and select either the Police or EMS department to submit your department application."},
+        {q:"Where can I report rule violations or get support?",a:"Join our Discord server and open a support ticket. Our staff team is available to assist you."}
+      ];
     }
     
     faqList.innerHTML=faq.map(f=>`<details class="faq-card">
@@ -120,8 +125,6 @@
     document.getElementById("faqList").innerHTML=`<div class="faq-card" style="text-align:center;padding:20px;color:#ef4444">Error loading FAQ. Please refresh the page.</div>`;
   }
 })();
-
-loadFAQ();
 </script>
 </body>
 </html>

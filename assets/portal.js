@@ -73,8 +73,22 @@ async function mlGetApps(){
   }
 }
 async function mlSaveApps(all){
-  // Not needed with table-based API - applications are saved individually
-  console.warn("mlSaveApps is deprecated with table-based API");
+  // Legacy compatibility: when called with an array, update modified apps if needed
+  console.warn("mlSaveApps is deprecated with table-based API; use mlUpdateAppStatus instead");
+}
+
+async function mlUpdateAppStatus(id, status){
+  try {
+    const response = await fetch(`/api/applications/${id}/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status })
+    });
+    return await response.json();
+  } catch (e) {
+    console.error("Error updating application status:", e);
+    return { ok: false, error: e.message };
+  }
 }
 
 /* ---------- Members / Ranks ---------- */
@@ -115,8 +129,10 @@ const ML_PERMS={
   Police:["Police Cmd"],
   EMS:["EMS Cmd"],
   Streamers:["Streamer Manager"],
-  AuditLogs:["Staff"],
-  Settings:["Management"]
+  AuditLogs:["Staff","Management"],
+  Settings:["Management"],
+  Store:["Management"],
+  Management:["Management"]
 };
 
 /* Server-side role validation - SECURE */
@@ -219,20 +235,12 @@ async function mlGetRoleName(){
     console.error("Failed to fetch role name:",e);
   }
   
-  // Fallback: try to get from local storage or role ID
+  // Fallback: try to get from role label
   try{
-    const roleId=await mlRole();
-    const nameMapping={
-      'MANAGEMENT_ROLE_ID':'Management',
-      'ADMINISTRATOR_ROLE_ID':'Administrator',
-      'MODERATOR_ROLE_ID':'Moderator',
-      'SUPPORT_ROLE_ID':'Support',
-      'POLICE_MANAGEMENT_ROLE_ID':'Police Management',
-      'EMS_MANAGEMENT_ROLE_ID':'EMS Management',
-      'PLAYER':'Player'
-    };
-    const name=nameMapping[roleId]||"Player";
-    return typeof name === 'string' ? name : 'Player';
+    const roleLabel=await mlRole();
+    if(roleLabel && roleLabel!=="PLAYER"){
+      return roleLabel;
+    }
   }catch(e){
     console.error("Fallback role name failed:",e);
   }
@@ -330,6 +338,58 @@ async function mlCreateTicket(type,discord,channelName){
   all.unshift({id:mlUid(),type,discord,channel:channelName,status:"open",created:new Date().toLocaleString()});
   await mlSaveTickets(all);
 }
+
+async function mlUpdateTicketStatus(id,status){
+  try{
+    const response=await fetch(`/api/tickets/${id}/status`,{
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({status})
+    });
+    if(response.ok){
+      const data=await response.json();
+      return data.ticket;
+    }
+  }catch(e){
+    console.error("Failed to update ticket status via API:",e);
+  }
+  const all=await mlGetTickets();
+  const t=all.find(x=>String(x.id)===String(id));
+  if(t){
+    t.status=status;
+    await mlSaveTickets(all);
+    return t;
+  }
+  return null;
+}
+
+// Global mobile navigation handler supporting all navbar styles
+if(typeof document!=="undefined"){
+  document.addEventListener("DOMContentLoaded", function(){
+    const nav=document.querySelector(".ml-nav, header.nav");
+    const navlinks=document.querySelector(".ml-navlinks, header.nav nav");
+    const existingBtn=document.getElementById("menuBtn") || document.getElementById("mlMenuBtn");
+    if(existingBtn && nav){
+      existingBtn.onclick=function(e){
+        e.stopPropagation();
+        if(navlinks) navlinks.classList.toggle("mobile-open");
+        nav.classList.toggle("open");
+      };
+    } else if(nav && navlinks && !existingBtn){
+      const btn=document.createElement("button");
+      btn.id="mlMenuBtn";
+      btn.className="ml-menu-btn";
+      btn.setAttribute("aria-label","Toggle Navigation Menu");
+      btn.innerHTML="&#9776;";
+      btn.onclick=function(e){
+        e.stopPropagation();
+        navlinks.classList.toggle("mobile-open");
+        nav.classList.toggle("open");
+      };
+      nav.appendChild(btn);
+    }
+  });
+}
 async function mlPushDiscordLog(type,message,details){
   // This would call a Discord bot API
   console.log("Discord log:",type,message,details);
@@ -340,7 +400,17 @@ async function mlGetStreamers(){const data=await mlGetStore(STREAMER_KEY);return
 async function mlSaveStreamers(all){return await mlSetStore(STREAMER_KEY,all)}
 
 /* ---------- Content ---------- */
-async function mlGetContent(){const data=await mlGetStore(CONTENT_KEY);return typeof data==="object"?data:{faq:[],siteAnnouncements:[]}}
+async function mlGetContent(){
+  const data=await mlGetStore(CONTENT_KEY);
+  if(data && typeof data==="object"){
+    return {
+      rules: Array.isArray(data.rules)?data.rules:[],
+      faq: Array.isArray(data.faq)?data.faq:[],
+      siteAnnouncements: Array.isArray(data.siteAnnouncements)?data.siteAnnouncements:[]
+    };
+  }
+  return {rules:[],faq:[],siteAnnouncements:[]};
+}
 async function mlSaveContent(c){return await mlSetStore(CONTENT_KEY,c)}
 
 /* ---------- Utilities ---------- */

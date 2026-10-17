@@ -356,6 +356,13 @@ async function render(){
     console.error("Error fetching audit logs:",e);
   }
   
+  // Normalize database column names
+  rows = rows.map(r => ({
+    ...r,
+    staffName: r.discord_username || r.staffName || "Staff Member",
+    timestamp: r.created_at || r.timestamp || new Date().toISOString()
+  }));
+
   // Filter by area
   if(areaFilter!=="all")rows=rows.filter(e=>e.area===areaFilter);
   

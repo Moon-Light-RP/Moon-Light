@@ -6,6 +6,7 @@ const path = require('path');
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = Number(process.env.PORT || 3000);
 let activePort = PORT;
 
@@ -173,6 +174,25 @@ app.use((req, res, next) => {
   next();
 });
 
+// Block access to sensitive files
+app.use((req, res, next) => {
+  const normalized = req.path.toLowerCase();
+  if (
+    normalized.startsWith('/.env') ||
+    normalized.endsWith('.env') ||
+    normalized.endsWith('.sql') ||
+    normalized === '/package.json' ||
+    normalized === '/package-lock.json' ||
+    normalized === '/server.js' ||
+    normalized === '/start.bat' ||
+    normalized.startsWith('/node_modules') ||
+    normalized.startsWith('/.git')
+  ) {
+    return res.status(403).send('Forbidden');
+  }
+  next();
+});
+
 // Static site files are served by the same Express function so the deployment
 // works reliably when Vercel rewrites requests to /api.
 app.use(express.static(path.join(process.cwd()), {
@@ -294,10 +314,31 @@ app.get('/api/store', async (req, res) => {
   }
 });
 
+const SENSITIVE_STORE_KEYS = new Set([
+  'moon_light_content_v1',
+  'moon_light_server_status_v1',
+  'moon_light_ranks_v1',
+  'moon_light_members_v1',
+  'moon_light_department_notices_v1',
+  'moon_light_notices_v1',
+  'moon_light_streamers_v1',
+  'moon_light_audit_log_v1',
+  'moon_light_tickets_v1',
+  'moon_light_store_products_v1'
+]);
+
 app.put('/api/store', requireDiscordUser, async (req, res) => {
   const key = typeof req.body?.key === 'string' ? req.body.key : '';
   if (!/^moon_light_[a-zA-Z0-9_-]+$/.test(key)) {
     return res.status(400).json({ ok: false, error: 'Invalid storage key.' });
+  }
+
+  // Security check: restrict sensitive system keys to staff/management
+  if (SENSITIVE_STORE_KEYS.has(key)) {
+    const roleId = await getUserRole(req.session.discordUser.id);
+    if (!roleId || roleId === 'PLAYER') {
+      return res.status(403).json({ ok: false, error: 'Staff permission required to modify this data.' });
+    }
   }
 
   try {
@@ -318,6 +359,14 @@ app.delete('/api/store', requireDiscordUser, async (req, res) => {
   const key = typeof req.query.key === 'string' ? req.query.key : '';
   if (!/^moon_light_[a-zA-Z0-9_-]+$/.test(key)) {
     return res.status(400).json({ ok: false, error: 'Invalid storage key.' });
+  }
+
+  // Security check: restrict sensitive system keys to staff/management
+  if (SENSITIVE_STORE_KEYS.has(key)) {
+    const roleId = await getUserRole(req.session.discordUser.id);
+    if (!roleId || roleId === 'PLAYER') {
+      return res.status(403).json({ ok: false, error: 'Staff permission required to delete this data.' });
+    }
   }
 
   try {
@@ -414,7 +463,44 @@ app.post('/api/applications', requireDiscordUser, async (req, res) => {
       // Continue anyway - the application might still work
     }
     
-    // Check for existing active applications
+    // Check if user already holds a whitelist spot on Discord or has an accepted application
+    const whitelistRoleId = process.env.DISCORD_WHITELIST_ROLE_ID || '1535386905749757962';
+    const userDiscordRoles = req.session.discordUser.roles || [];
+    const isWhitelistedOnDiscord = userDiscordRoles.includes(whitelistRoleId) || userDiscordRoles.includes('1535386905749757962');
+    
+    // Check accepted applications
+    let hasAcceptedApp = false;
+    try {
+      const acceptedApps = await supabaseRequest(`applications?discord_id=eq.${discordId}&status=eq.accepted&select=id,type,character_name`);
+      if (acceptedApps && acceptedApps.length > 0) hasAcceptedApp = true;
+    } catch (_) {}
+
+    const requestedType = String(req.body.type || 'CIVILIAN').toUpperCase();
+
+    // Whitelisted users cannot submit another civilian/whitelist application
+    if (isWhitelistedOnDiscord || hasAcceptedApp) {
+      if (requestedType === 'CIVILIAN') {
+        return res.status(400).json({ 
+          ok: false, 
+          whitelisted: true,
+          error: 'You already hold an active whitelist spot on Discord and cannot submit another application.' 
+        });
+      }
+
+      // If submitting for a department, ensure they don't already have an active or accepted app for that department
+      try {
+        const existingDept = await supabaseRequest(`applications?discord_id=eq.${discordId}&type=eq.${requestedType}&status=in.(pending,under_review,interview,accepted)&select=id,status,type`);
+        if (existingDept && existingDept.length > 0) {
+          return res.status(400).json({
+            ok: false,
+            whitelisted: true,
+            error: `You already have an active or accepted application for the ${requestedType} department.`
+          });
+        }
+      } catch (_) {}
+    }
+
+    // Check for existing active applications of any type
     const existingApps = await supabaseRequest(`applications?discord_id=eq.${discordId}&status=in.(pending,under_review,interview)&select=id,status,type,created_at`);
     
     if (existingApps && existingApps.length > 0) {
@@ -1303,18 +1389,46 @@ app.get('/auth/logout', (req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/auth/me', (req, res) => {
+app.get('/auth/me', async (req, res) => {
   const discordUser = req.session?.discordUser;
+  if (!discordUser?.id) {
+    return res.json({
+      authenticated: false,
+      configured: Boolean(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET && process.env.DISCORD_REDIRECT_URI),
+      user: null
+    });
+  }
+
+  const whitelistRoleId = process.env.DISCORD_WHITELIST_ROLE_ID || '1535386905749757962';
+  const roles = discordUser.roles || [];
+  const hasDiscordWhitelistRole = roles.includes(whitelistRoleId) || roles.includes('1535386905749757962');
+
+  let hasAcceptedApplication = false;
+  let acceptedApplication = null;
+  try {
+    const accepted = await supabaseRequest(`applications?discord_id=eq.${discordUser.id}&status=eq.accepted&select=*&limit=1`);
+    if (accepted && accepted.length > 0) {
+      hasAcceptedApplication = true;
+      acceptedApplication = accepted[0];
+    }
+  } catch (_) {}
+
+  const isWhitelisted = hasDiscordWhitelistRole || hasAcceptedApplication;
+
   res.json({
-    authenticated: Boolean(discordUser?.id),
+    authenticated: true,
     configured: Boolean(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET && process.env.DISCORD_REDIRECT_URI),
-    user: discordUser ? {
+    user: {
       id: discordUser.id,
       username: discordUser.username,
       global_name: discordUser.global_name || discordUser.username,
       avatar: discordUser.avatar || null,
-      roles: discordUser.roles || []
-    } : null,
+      roles: roles,
+      isWhitelisted,
+      hasDiscordWhitelistRole,
+      hasAcceptedApplication,
+      acceptedApplication
+    },
     sessionDebug: {
       hasSession: !!req.session,
       hasOAuthState: !!req.session?.oauthState,
@@ -1777,9 +1891,9 @@ app.get('/api/debug/oauth', (req, res) => {
 // -----------------------------------------------------------------------------
 // Vercel / local server
 // -----------------------------------------------------------------------------
-if (process.env.VERCEL) {
-  module.exports = app;
-} else {
+module.exports = app;
+
+if (!process.env.VERCEL) {
   function startServer(port) {
     const server = app.listen(port, () => {
       activePort = port;

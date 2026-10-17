@@ -93,19 +93,47 @@ async function render(filter){
   const all=await mlGetApps();
   const list=all.filter(a=>a.type==="POLICE").filter(a=>filter==="all"||a.status===filter);
   document.getElementById("list").innerHTML=list.length?list.map(a=>{
-    const i=all.indexOf(a);
-    return `<article class="application-card"><h3>${mlEsc(a.characterName)||"Unknown"}</h3><p class="ml-muted">${mlEsc(a.discord)||"No Discord"}</p><div class="app-meta"><span>${mlEsc(a.experience||"—")}</span><span>${mlEsc(a.submitted||"—")}</span><span class="ml-status ${a.status||"pending"}">${mlEsc(a.status||"pending")}</span></div><div class="review-actions"><button class="ml-btn" onclick="setStatus(${i},'interview')">Interview</button><button class="ml-btn primary" onclick="setStatus(${i},'accepted')">Accept</button><button class="ml-btn danger" onclick="setStatus(${i},'rejected')">Reject</button></div></article>`;
+    const charName = a.character_name || a.characterName || "Unknown";
+    const discordName = a.discord_username || a.discord || "No Discord";
+    const appDate = a.created_at ? mlFmt(a.created_at) : (a.submitted || "—");
+    return `<article class="application-card">
+      <h3>${mlEsc(charName)}</h3>
+      <p class="ml-muted">${mlEsc(discordName)}</p>
+      <div class="app-meta">
+        <span>${mlEsc(a.experience||"—")}</span>
+        <span>${mlEsc(appDate)}</span>
+        <span class="ml-status ${a.status||"pending"}">${mlEsc(a.status||"pending")}</span>
+      </div>
+      <div class="review-actions">
+        <button class="ml-btn" onclick="setStatus('${a.id}','interview')">Interview</button>
+        <button class="ml-btn primary" onclick="setStatus('${a.id}','accepted')">Accept</button>
+        <button class="ml-btn danger" onclick="setStatus('${a.id}','rejected')">Reject</button>
+      </div>
+    </article>`;
   }).join(""):`<div class="ml-card" style="grid-column:1/-1">No Police applications found.</div>`;
 }
 function filterApps(x){render(x)}
-async function setStatus(i,status){
-  const all=await mlGetApps();const a=all[i];if(!a)return;
+async function setStatus(id,status){
+  const all=await mlGetApps();
+  const a=all.find(x=>String(x.id)===String(id));
+  if(!a)return;
   const prev=a.status||"pending";
-  a.status=status;await mlSaveApps(all);
-  if(status==="accepted"){await mlAddNotification(a.discord,ML_NOTIF_TYPES.APPROVED,"Police application approved","Your Police application has been approved.");await mlAddNotification(a.discord,ML_NOTIF_TYPES.DEPT_ACCEPTED,"Welcome to Police","You are now accepted into the Police department.")}
-  else if(status==="rejected")await mlAddNotification(a.discord,ML_NOTIF_TYPES.REJECTED,"Police application rejected","Your Police application was not accepted this time.");
-  await mlLog("Police",`Status changed: ${prev} → ${status}`,a.characterName||"Unknown",`Discord: ${a.discord||"—"}`);
-  await render("all");
+  const charName=a.character_name||a.characterName||"Unknown";
+  const discordTarget=a.discord_id||a.discord_username||a.discord;
+
+  const res=await mlUpdateAppStatus(a.id,status);
+  if(res && res.ok !== false){
+    if(status==="accepted"){
+      await mlAddNotification(discordTarget,ML_NOTIF_TYPES.APPROVED,"Police application approved","Your Police application has been approved.");
+      await mlAddNotification(discordTarget,ML_NOTIF_TYPES.DEPT_ACCEPTED,"Welcome to Police","You are now accepted into the Police department.");
+    }else if(status==="rejected"){
+      await mlAddNotification(discordTarget,ML_NOTIF_TYPES.REJECTED,"Police application rejected","Your Police application was not accepted this time.");
+    }
+    await mlLog("Police",`Status changed: ${prev} → ${status}`,charName,`Discord: ${discordTarget||"—"}`);
+    await render("all");
+  }else{
+    alert("Failed to update status: "+(res?.error||"Unknown error"));
+  }
 }
 </script>
 </body>

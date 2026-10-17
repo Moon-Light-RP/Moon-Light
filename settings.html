@@ -92,7 +92,7 @@
 <script>
 const lock=document.getElementById("lock"), box=document.getElementById("box");
 (async function initSettings(){
-  if(mlRoleGate(lock,box,"Settings","Management")){
+  if(await mlRoleGate(lock,box,"Settings","Management")){
     lock.className="role-message granted";
     lock.innerHTML="Settings access granted. Management controls available.";
     try{

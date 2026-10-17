@@ -4,7 +4,6 @@ const indicators=[...document.querySelectorAll('.steps span')];
 function showStep(n){if(!steps.length)return;currentStep=n;steps.forEach((s,i)=>s.classList.toggle('active',i===n));indicators.forEach((s,i)=>s.classList.toggle('active',i===n));window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('.next').forEach(btn=>btn.addEventListener('click',()=>{const form=btn.closest('form');const fields=[...steps[currentStep].querySelectorAll('input,textarea,select')];if(!fields.every(x=>x.checkValidity())){fields.forEach(x=>x.reportValidity());return}showStep(Math.min(currentStep+1,steps.length-1))}));
 document.querySelectorAll('.back').forEach(btn=>btn.addEventListener('click',()=>showStep(Math.max(currentStep-1,0))));
-document.getElementById('applicationForm')?.addEventListener('submit',e=>{e.preventDefault();document.getElementById('formMsg').textContent='Application submitted successfully. Your application is now pending review.';e.target.reset();showStep(0)});
 const menu=document.getElementById('menuBtn');if(menu)menu.onclick=()=>document.querySelector('.nav')?.classList.toggle('open');
 
 
